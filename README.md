@@ -18,19 +18,7 @@ A lightweight, dark-themed UI library for Roblox scripts built with vanilla Luau
 Load the library directly in your Roblox script / executor:
 
 ```lua
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/unagitatedly/repo/main/unagitatedly_ui.lua"))()
-```
-
-Or load from your executor workspace locally:
-
-```lua
-local Library = loadstring(readfile("unagitatedly_ui.lua"))()
-```
-
-Or with fallback support (local file first, then GitHub):
-
-```lua
-local Library = loadstring(readfile and (pcall(readfile, "unagitatedly_ui.lua") and readfile("unagitatedly_ui.lua") or readfile("matcha_lib.lua")) or game:HttpGet("https://raw.githubusercontent.com/unagitatedly/repo/main/unagitatedly_ui.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/unagitatedly/repo/refs/heads/main/unagitatedly_ui.lua"))()
 ```
 
 ---
@@ -38,7 +26,7 @@ local Library = loadstring(readfile and (pcall(readfile, "unagitatedly_ui.lua") 
 ## Example Usage
 
 ```lua
-local Library = loadstring(readfile and readfile("unagitatedly_ui.lua") or game:HttpGet("https://raw.githubusercontent.com/unagitatedly/repo/main/unagitatedly_ui.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/unagitatedly/repo/refs/heads/main/unagitatedly_ui.lua"))()
 
 local Window = Library:CreateWindow({
     Title = "unagitatedly",
