@@ -12,6 +12,7 @@ local Library = {
     ActiveDropdownCloseFn = nil,
     Windows = {},
     Flags = {},
+    ScreenGui = nil,
     Theme = {
         accent = Color3.fromRGB(244, 166, 205),
         accentBright = Color3.fromRGB(255, 130, 185),
@@ -60,14 +61,30 @@ function Library:CloseDropdown()
     end
 end
 
+function Library:Destroy()
+    Library:CloseDropdown()
+    if Library.ScreenGui then
+        pcall(function() Library.ScreenGui:Destroy() end)
+        Library.ScreenGui = nil
+    end
+    if getgenv and getgenv()._UnagitatedlyUI then
+        pcall(function() getgenv()._UnagitatedlyUI:Destroy() end)
+        getgenv()._UnagitatedlyUI = nil
+    end
+end
+
 function Library:CreateWindow(config)
     config = config or {}
     local Title = config.Title or "unagitatedly"
     local SubTitle = config.SubTitle or " ·  Universal"
     local BadgeText = config.Badge or "Standard"
-    local Version = config.Version or "R2K"
+    local Version = config.Version or "2.0"
     local Size = config.Size or UDim2.new(0, 680, 0, 760)
     local ToggleKey = config.ToggleKey or Enum.KeyCode.Insert
+    if typeof(ToggleKey) == "string" and Enum.KeyCode[ToggleKey] then
+        ToggleKey = Enum.KeyCode[ToggleKey]
+    end
+
     local FooterCfg = config.Footer or {
         OnlineText = "0 online",
         OnlineColor = "#22c55e",
@@ -76,12 +93,22 @@ function Library:CreateWindow(config)
         BuildColor = "#f4a6cd",
     }
 
+    if getgenv and getgenv()._UnagitatedlyUI then
+        pcall(function() getgenv()._UnagitatedlyUI:Destroy() end)
+    end
+
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = HttpService:GenerateGUID(false)
     ScreenGui.ResetOnSpawn = false
+    ScreenGui.IgnoreGuiInset = true
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui.DisplayOrder = 9999
     ScreenGui.Parent = ScreenParent
+    Library.ScreenGui = ScreenGui
+
+    if getgenv then
+        getgenv()._UnagitatedlyUI = ScreenGui
+    end
 
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
@@ -110,6 +137,7 @@ function Library:CreateWindow(config)
     local isDragging, dragStart, startPos = false, nil, nil
     HeaderBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            Library:CloseDropdown()
             isDragging = true
             dragStart = input.Position
             startPos = MainFrame.Position
@@ -268,6 +296,11 @@ function Library:CreateWindow(config)
         CurrentTab = nil,
     }
 
+    function WindowObj:Destroy()
+        Library:CloseDropdown()
+        pcall(function() ScreenGui:Destroy() end)
+    end
+
     function WindowObj:SwitchTab(name)
         WindowObj.CurrentTab = name
         Library:CloseDropdown()
@@ -289,7 +322,7 @@ function Library:CreateWindow(config)
     end
 
     function WindowObj:CreateTab(name)
-        local isFirst = (#TopNavContainer:GetChildren() == 1)
+        local isFirst = (next(WindowObj.Tabs) == nil)
 
         local btn = Instance.new("TextButton")
         btn.Name = "Nav_" .. name
@@ -331,6 +364,10 @@ function Library:CreateWindow(config)
         page.ZIndex = 3
         page.Parent = ContentArea
 
+        page:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
+            Library:CloseDropdown()
+        end)
+
         local leftCol = Instance.new("Frame")
         leftCol.Name = "LeftColumn"
         leftCol.Size = UDim2.new(0.5, -8, 1, 0)
@@ -358,6 +395,9 @@ function Library:CreateWindow(config)
         rightLayout.Parent = rightCol
 
         WindowObj.Tabs[name] = page
+        if isFirst then
+            WindowObj.CurrentTab = name
+        end
 
         local TabObj = {}
 
@@ -409,7 +449,7 @@ function Library:CreateWindow(config)
             function CardObj:CreateToggle(tConfig)
                 tConfig = tConfig or {}
                 local name = tConfig.Name or "Toggle"
-                local defaultVal = tConfig.Default or false
+                local defaultVal = not not tConfig.Default
                 local callback = tConfig.Callback or function() end
 
                 local row = Instance.new("Frame")
@@ -455,7 +495,7 @@ function Library:CreateWindow(config)
                 local state = defaultVal
 
                 local function SetState(newVal)
-                    state = newVal
+                    state = not not newVal
                     if state then
                         Tween(box, { BackgroundColor3 = Library.Theme.accent }, 0.12)
                         Tween(bs, { Color = Library.Theme.accent }, 0.12)
@@ -478,10 +518,12 @@ function Library:CreateWindow(config)
             function CardObj:CreateSlider(sConfig)
                 sConfig = sConfig or {}
                 local name = sConfig.Name or "Slider"
-                local minVal = sConfig.Min or 0
-                local maxVal = sConfig.Max or 100
-                local defaultVal = sConfig.Default or minVal
+                local minVal = tonumber(sConfig.Min) or 0
+                local maxVal = tonumber(sConfig.Max) or 100
+                if maxVal < minVal then maxVal = minVal end
+                local defaultVal = tonumber(sConfig.Default) or minVal
                 local formatStr = sConfig.Format or "%.2f"
+                local step = tonumber(sConfig.Step)
                 local callback = sConfig.Callback or function() end
 
                 local container = Instance.new("Frame")
@@ -525,7 +567,9 @@ function Library:CreateWindow(config)
                 tc.CornerRadius = UDim.new(1, 0)
                 tc.Parent = track
 
-                local pct = math.clamp((defaultVal - minVal) / (maxVal - minVal), 0, 1)
+                local range = math.max(1e-4, maxVal - minVal)
+                local pct = math.clamp((defaultVal - minVal) / range, 0, 1)
+
                 local fill = Instance.new("Frame")
                 fill.Size = UDim2.new(pct, 0, 1, 0)
                 fill.BackgroundColor3 = Library.Theme.accent
@@ -552,8 +596,12 @@ function Library:CreateWindow(config)
                 local currentVal = defaultVal
 
                 local function SetValue(val)
-                    currentVal = math.clamp(val, minVal, maxVal)
-                    local p = (currentVal - minVal) / (maxVal - minVal)
+                    local v = tonumber(val) or minVal
+                    if step and step > 0 then
+                        v = math.floor((v - minVal) / step + 0.5) * step + minVal
+                    end
+                    currentVal = math.clamp(v, minVal, maxVal)
+                    local p = math.clamp((currentVal - minVal) / range, 0, 1)
                     fill.Size = UDim2.new(p, 0, 1, 0)
                     knob.Position = UDim2.new(p, -5, 0.5, -5)
                     valLabel.Text = string.format(formatStr, currentVal)
@@ -574,7 +622,8 @@ function Library:CreateWindow(config)
                 clickArea.InputBegan:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                         isSliding = true
-                        local relX = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+                        local trackW = track.AbsoluteSize.X
+                        local relX = (trackW > 0) and math.clamp((input.Position.X - track.AbsolutePosition.X) / trackW, 0, 1) or 0
                         SetValue(minVal + relX * (maxVal - minVal))
                     end
                 end)
@@ -587,7 +636,8 @@ function Library:CreateWindow(config)
 
                 UserInputService.InputChanged:Connect(function(input)
                     if isSliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                        local relX = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+                        local trackW = track.AbsoluteSize.X
+                        local relX = (trackW > 0) and math.clamp((input.Position.X - track.AbsolutePosition.X) / trackW, 0, 1) or 0
                         SetValue(minVal + relX * (maxVal - minVal))
                     end
                 end)
@@ -599,8 +649,22 @@ function Library:CreateWindow(config)
                 dConfig = dConfig or {}
                 local name = dConfig.Name or "Dropdown"
                 local options = dConfig.Options or { "Option 1", "Option 2" }
-                local defaultIdx = dConfig.Default or 0
                 local callback = dConfig.Callback or function() end
+
+                local defaultIdx = 0
+                if typeof(dConfig.Default) == "number" then
+                    defaultIdx = dConfig.Default
+                    if defaultIdx >= 1 and defaultIdx <= #options and not options[defaultIdx + 1] and defaultIdx == #options then
+                        defaultIdx = defaultIdx - 1
+                    end
+                elseif typeof(dConfig.Default) == "string" then
+                    for i, opt in ipairs(options) do
+                        if opt == dConfig.Default then
+                            defaultIdx = i - 1
+                            break
+                        end
+                    end
+                end
 
                 local container = Instance.new("Frame")
                 container.Size = UDim2.new(1, 0, 0, 48)
@@ -629,7 +693,7 @@ function Library:CreateWindow(config)
                 comboBtn.TextSize = 11
                 comboBtn.TextColor3 = Library.Theme.text
                 comboBtn.TextXAlignment = Enum.TextXAlignment.Left
-                comboBtn.Text = "   " .. (options[defaultIdx + 1] or options[1] or "")
+                comboBtn.Text = "   " .. tostring(options[defaultIdx + 1] or options[1] or "")
                 comboBtn.ZIndex = 5
                 comboBtn.Parent = container
 
@@ -723,7 +787,7 @@ function Library:CreateWindow(config)
                         optBtn.TextSize = 11
                         optBtn.TextColor3 = (i - 1 == currentIdx) and Library.Theme.accent or Library.Theme.text
                         optBtn.TextXAlignment = Enum.TextXAlignment.Left
-                        optBtn.Text = "  " .. opt
+                        optBtn.Text = "  " .. tostring(opt)
                         optBtn.ZIndex = 201
                         optBtn.Parent = dropOverlay
 
@@ -744,7 +808,7 @@ function Library:CreateWindow(config)
 
                         optBtn.MouseButton1Click:Connect(function()
                             currentIdx = i - 1
-                            comboBtn.Text = "   " .. opt
+                            comboBtn.Text = "   " .. tostring(opt)
                             Library:CloseDropdown()
                             pcall(callback, currentIdx, opt)
                         end)
@@ -754,9 +818,39 @@ function Library:CreateWindow(config)
                 end)
 
                 return {
-                    Set = function(idx)
-                        currentIdx = idx
-                        comboBtn.Text = "   " .. (options[idx + 1] or "")
+                    Set = function(val)
+                        if typeof(val) == "number" then
+                            local idx = val
+                            if idx >= 1 and idx <= #options and not options[idx + 1] and idx == #options then
+                                idx = idx - 1
+                            end
+                            currentIdx = math.clamp(idx, 0, math.max(0, #options - 1))
+                            comboBtn.Text = "   " .. tostring(options[currentIdx + 1] or "")
+                            pcall(callback, currentIdx, options[currentIdx + 1])
+                        elseif typeof(val) == "string" then
+                            for i, opt in ipairs(options) do
+                                if opt == val then
+                                    currentIdx = i - 1
+                                    comboBtn.Text = "   " .. tostring(opt)
+                                    pcall(callback, currentIdx, opt)
+                                    break
+                                end
+                            end
+                        end
+                    end,
+                    Refresh = function(newOptions, newDefault)
+                        options = newOptions or options
+                        currentIdx = 0
+                        if newDefault then
+                            if typeof(newDefault) == "number" then
+                                currentIdx = newDefault
+                            elseif typeof(newDefault) == "string" then
+                                for i, opt in ipairs(options) do
+                                    if opt == newDefault then currentIdx = i - 1 break end
+                                end
+                            end
+                        end
+                        comboBtn.Text = "   " .. tostring(options[currentIdx + 1] or options[1] or "")
                     end,
                     Get = function() return currentIdx, options[currentIdx + 1] end
                 }
@@ -836,12 +930,17 @@ function Library:CreateWindow(config)
                 box.TextSize = 11
                 box.TextColor3 = Library.Theme.text
                 box.TextXAlignment = Enum.TextXAlignment.Left
-                box.PlaceholderText = "  " .. placeholder
+                box.PlaceholderText = placeholder
                 box.PlaceholderColor3 = Library.Theme.textMuted
-                box.Text = "  " .. tostring(defaultVal or "")
+                box.Text = tostring(defaultVal or "")
                 box.ClearTextOnFocus = false
                 box.ZIndex = 5
                 box.Parent = container
+
+                local tbp = Instance.new("UIPadding")
+                tbp.PaddingLeft = UDim.new(0, 10)
+                tbp.PaddingRight = UDim.new(0, 10)
+                tbp.Parent = box
 
                 local tbc = Instance.new("UICorner")
                 tbc.CornerRadius = UDim.new(0, 6)
@@ -851,15 +950,14 @@ function Library:CreateWindow(config)
                 box.Focused:Connect(function()
                     Tween(stroke, { Color = Library.Theme.accent }, 0.12)
                 end)
-                box.FocusLost:Connect(function()
+                box.FocusLost:Connect(function(enterPressed)
                     Tween(stroke, { Color = Library.Theme.border }, 0.12)
-                    local val = box.Text:gsub("^%s+", "")
-                    pcall(callback, val)
+                    pcall(callback, box.Text, enterPressed)
                 end)
 
                 return {
-                    Set = function(t) box.Text = "  " .. tostring(t or "") end,
-                    Get = function() return box.Text:gsub("^%s+", "") end
+                    Set = function(t) box.Text = tostring(t or "") end,
+                    Get = function() return box.Text end
                 }
             end
 
@@ -883,6 +981,17 @@ function Library:CreateWatermark(wConfig)
     wConfig = wConfig or {}
     local Title = wConfig.Title or "unagitatedly"
 
+    local parentGui = Library.ScreenGui or ScreenParent:FindFirstChildOfClass("ScreenGui")
+    if not parentGui then
+        parentGui = Instance.new("ScreenGui")
+        parentGui.Name = HttpService:GenerateGUID(false)
+        parentGui.ResetOnSpawn = false
+        parentGui.IgnoreGuiInset = true
+        parentGui.DisplayOrder = 9999
+        parentGui.Parent = ScreenParent
+        Library.ScreenGui = parentGui
+    end
+
     local Watermark = Instance.new("Frame")
     Watermark.Name = "Watermark"
     Watermark.Size = UDim2.new(0, 240, 0, 24)
@@ -891,7 +1000,7 @@ function Library:CreateWatermark(wConfig)
     Watermark.BorderSizePixel = 0
     Watermark.Active = true
     Watermark.ZIndex = 10
-    Watermark.Parent = ScreenParent:FindFirstChildOfClass("ScreenGui") or ScreenParent
+    Watermark.Parent = parentGui
 
     local wmc = Instance.new("UICorner")
     wmc.CornerRadius = UDim.new(0, 6)
@@ -947,6 +1056,17 @@ function Library:CreateKeybindHUD(hConfig)
     hConfig = hConfig or {}
     local Title = hConfig.Title or "Active Modules"
 
+    local parentGui = Library.ScreenGui or ScreenParent:FindFirstChildOfClass("ScreenGui")
+    if not parentGui then
+        parentGui = Instance.new("ScreenGui")
+        parentGui.Name = HttpService:GenerateGUID(false)
+        parentGui.ResetOnSpawn = false
+        parentGui.IgnoreGuiInset = true
+        parentGui.DisplayOrder = 9999
+        parentGui.Parent = ScreenParent
+        Library.ScreenGui = parentGui
+    end
+
     local KeybindHud = Instance.new("Frame")
     KeybindHud.Name = "KeybindHUD"
     KeybindHud.Size = UDim2.new(0, 175, 0, 180)
@@ -955,7 +1075,7 @@ function Library:CreateKeybindHUD(hConfig)
     KeybindHud.BorderSizePixel = 0
     KeybindHud.Active = true
     KeybindHud.ZIndex = 10
-    KeybindHud.Parent = ScreenParent:FindFirstChildOfClass("ScreenGui") or ScreenParent
+    KeybindHud.Parent = parentGui
 
     local khc = Instance.new("UICorner")
     khc.CornerRadius = UDim.new(0, 10)
@@ -1050,8 +1170,12 @@ function Library:CreateKeybindHUD(hConfig)
 
     RunService.RenderStepped:Connect(function()
         for _, item in ipairs(TrackedModules) do
-            local state = item.Getter()
-            item.Label.Text = state and "<font color='#22c55e'>[ON]</font>" or "<font color='#73738a'>[OFF]</font>"
+            local success, state = pcall(item.Getter)
+            if success and state then
+                item.Label.Text = "<font color='#22c55e'>[ON]</font>"
+            else
+                item.Label.Text = "<font color='#73738a'>[OFF]</font>"
+            end
             item.Label.RichText = true
         end
     end)
