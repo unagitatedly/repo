@@ -1,4 +1,19 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/unagitatedly/repo/refs/heads/main/unagitatedly_ui.lua"))()
+local Library
+pcall(function()
+    if readfile and isfile and isfile("unagitatedly_ui.lua") then
+        Library = loadstring(readfile("unagitatedly_ui.lua"))()
+    end
+end)
+if not Library then
+    local success, res = pcall(function()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/unagitatedly/repo/refs/heads/main/unagitatedly_ui.lua"))()
+    end)
+    if success and res then
+        Library = res
+    else
+        Library = loadfile("unagitatedly_ui.lua")()
+    end
+end
 
 local Window = Library:CreateWindow({
     Title = "unagitatedly",
@@ -318,8 +333,8 @@ ServerCard:CreateButton({
     end
 })
 
-local CustomCard = SettingsTab:CreateCard("Live UI Customizer", "Left")
-local InfoCard = SettingsTab:CreateCard("Library Information & Diagnostics", "Right")
+local CustomCardLeft = SettingsTab:CreateCard("Window & Header Customizer", "Left")
+local CustomCardRight = SettingsTab:CreateCard("HUD & Footer Customizer", "Right")
 
 local Watermark = Library:CreateWatermark({
     Title = "unagitatedly"
@@ -335,7 +350,7 @@ KeybindHUD:Register("Player ESP", function() return State.ESP end)
 KeybindHUD:Register("Wallhack Chams", function() return State.Chams end)
 KeybindHUD:Register("Fly Mode", function() return State.Fly end, Enum.KeyCode.F)
 
-CustomCard:CreateTextInput({
+CustomCardLeft:CreateTextInput({
     Name = "Change UI Title",
     Placeholder = "Enter new window title...",
     Default = "unagitatedly",
@@ -344,7 +359,7 @@ CustomCard:CreateTextInput({
     end
 })
 
-CustomCard:CreateTextInput({
+CustomCardLeft:CreateTextInput({
     Name = "Change UI Subtitle",
     Placeholder = "Enter new subtitle...",
     Default = " ·  Universal Hub",
@@ -353,7 +368,7 @@ CustomCard:CreateTextInput({
     end
 })
 
-CustomCard:CreateTextInput({
+CustomCardLeft:CreateTextInput({
     Name = "Change Badge Text",
     Placeholder = "Enter badge text (e.g. VIP, DEV)...",
     Default = "v2.0",
@@ -362,54 +377,18 @@ CustomCard:CreateTextInput({
     end
 })
 
-CustomCard:CreateTextInput({
+CustomCardLeft:CreateTextInput({
     Name = "Change Top-Right Version Text",
-    Placeholder = "Enter version (e.g. 2.0, 2.1-beta)...",
+    Placeholder = "Enter version (e.g. 2.0, PRO)...",
     Default = "2.0",
     Callback = function(text)
         Window:SetVersion(text)
     end
 })
 
-CustomCard:CreateTextInput({
-    Name = "Change Watermark Title",
-    Placeholder = "Enter watermark title...",
-    Default = "unagitatedly",
-    Callback = function(text)
-        Watermark.SetTitle(text)
-    end
-})
+CustomCardLeft:CreateDivider()
 
-CustomCard:CreateTextInput({
-    Name = "Change Keybind HUD Title",
-    Placeholder = "Enter HUD title...",
-    Default = "Active Modules",
-    Callback = function(text)
-        KeybindHUD:SetTitle(text)
-    end
-})
-
-CustomCard:CreateTextInput({
-    Name = "Change Center Footer Text",
-    Placeholder = "Enter center text...",
-    Default = "unagitatedly hub",
-    Callback = function(text)
-        Window:SetFooter({ CenterText = text })
-    end
-})
-
-CustomCard:CreateTextInput({
-    Name = "Change Online Status Count",
-    Placeholder = "Enter online count...",
-    Default = "1,420 online",
-    Callback = function(text)
-        Window:SetFooter({ OnlineText = text })
-    end
-})
-
-CustomCard:CreateDivider()
-
-CustomCard:CreateColorPicker({
+CustomCardLeft:CreateColorPicker({
     Name = "Change UI Accent Theme Color",
     Default = Color3.fromRGB(244, 166, 205),
     Callback = function(col)
@@ -420,7 +399,53 @@ CustomCard:CreateColorPicker({
     end
 })
 
-CustomCard:CreateToggle({
+CustomCardLeft:CreateButton({
+    Name = "Unload & Destroy UI",
+    Accent = false,
+    Callback = function()
+        Window:Destroy()
+    end
+})
+
+CustomCardRight:CreateTextInput({
+    Name = "Change Watermark Title",
+    Placeholder = "Enter watermark title...",
+    Default = "unagitatedly",
+    Callback = function(text)
+        Watermark.SetTitle(text)
+    end
+})
+
+CustomCardRight:CreateTextInput({
+    Name = "Change Keybind HUD Title",
+    Placeholder = "Enter HUD title...",
+    Default = "Active Modules",
+    Callback = function(text)
+        KeybindHUD:SetTitle(text)
+    end
+})
+
+CustomCardRight:CreateTextInput({
+    Name = "Change Center Footer Text",
+    Placeholder = "Enter center text...",
+    Default = "unagitatedly hub",
+    Callback = function(text)
+        Window:SetFooter({ CenterText = text })
+    end
+})
+
+CustomCardRight:CreateTextInput({
+    Name = "Change Online Status Count",
+    Placeholder = "Enter online count...",
+    Default = "1,420 online",
+    Callback = function(text)
+        Window:SetFooter({ OnlineText = text })
+    end
+})
+
+CustomCardRight:CreateDivider()
+
+CustomCardRight:CreateToggle({
     Name = "Filter Keybind HUD (Only Active)",
     Default = false,
     Callback = function(val)
@@ -428,7 +453,7 @@ CustomCard:CreateToggle({
     end
 })
 
-CustomCard:CreateButton({
+CustomCardRight:CreateButton({
     Name = "Send Test Slide Notification",
     Accent = true,
     Callback = function()
@@ -438,41 +463,6 @@ CustomCard:CreateButton({
             Duration = 3.5
         })
     end
-})
-
-CustomCard:CreateButton({
-    Name = "Unload & Destroy UI",
-    Accent = false,
-    Callback = function()
-        Window:Destroy()
-    end
-})
-
-InfoCard:CreateParagraph({
-    Title = "Library Specifications",
-    Content = "Standalone Luau UI Framework featuring pixel-perfect alignment, automatic sizing, live customizers, and reactive animations."
-})
-
-InfoCard:CreateLabel({
-    Text = "Build: August 14 2026 Standalone",
-    Color = "#f4a6cd"
-})
-
-InfoCard:CreateLabel({
-    Text = "Toggle Menu: [Insert] Key",
-    Color = "#73738a"
-})
-
-InfoCard:CreateDivider()
-
-InfoCard:CreateLabel({
-    Text = "Notification Animations: Smooth Quart Slide",
-    Color = "#22c55e"
-})
-
-InfoCard:CreateLabel({
-    Text = "Keybind HUD: Dynamic Automatic Height",
-    Color = "#22c55e"
 })
 
 Library:Notify({
