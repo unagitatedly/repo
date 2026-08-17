@@ -1123,18 +1123,23 @@ function Library:CreateWindow(config)
 
                     local maxVisible = math.min(#options, 6)
                     local popupHeight = (maxVisible * 26) + 8
+                    local btnPos = comboBtn.AbsolutePosition
+                    local btnSize = comboBtn.AbsoluteSize
+
+                    local posX = btnPos.X
+                    local posY = btnPos.Y + btnSize.Y + 4
 
                     dropOverlay = Instance.new("ScrollingFrame")
                     dropOverlay.Name = "DropdownPopup"
-                    dropOverlay.Size = UDim2.new(1, 0, 0, popupHeight)
-                    dropOverlay.Position = UDim2.new(0, 0, 0, 48)
+                    dropOverlay.Size = UDim2.new(0, btnSize.X, 0, popupHeight)
+                    dropOverlay.Position = UDim2.new(0, posX, 0, posY)
                     dropOverlay.BackgroundColor3 = Library.Theme.cardBg
                     dropOverlay.BorderSizePixel = 0
                     dropOverlay.ScrollBarThickness = (#options > 6) and 3 or 0
                     dropOverlay.ScrollBarImageColor3 = Library.Theme.borderBright
                     dropOverlay.CanvasSize = UDim2.new(0, 0, 0, #options * 26 + 6)
-                    dropOverlay.ZIndex = 65
-                    dropOverlay.Parent = container
+                    dropOverlay.ZIndex = 300
+                    dropOverlay.Parent = ScreenGui
 
                     local doc = Instance.new("UICorner")
                     doc.CornerRadius = UDim.new(0, 6)
@@ -1165,7 +1170,7 @@ function Library:CreateWindow(config)
                         optBtn.TextColor3 = (i - 1 == currentIdx) and Library.Theme.accent or Library.Theme.text
                         optBtn.TextXAlignment = Enum.TextXAlignment.Left
                         optBtn.Text = "  " .. tostring(opt)
-                        optBtn.ZIndex = 66
+                        optBtn.ZIndex = 301
                         optBtn.Parent = dropOverlay
 
                         local oc = Instance.new("UICorner")
@@ -1183,12 +1188,18 @@ function Library:CreateWindow(config)
                             end
                         end)
 
-                        optBtn.MouseButton1Click:Connect(function()
+                        local selectedDone = false
+                        local function selectOption()
+                            if selectedDone then return end
+                            selectedDone = true
                             currentIdx = i - 1
                             comboBtn.Text = "  " .. tostring(opt)
                             Library:CloseDropdown()
                             pcall(callback, currentIdx, opt)
-                        end)
+                        end
+
+                        optBtn.MouseButton1Click:Connect(selectOption)
+                        optBtn.MouseButton1Down:Connect(selectOption)
                     end
 
                     Library.ActiveDropdownCloseFn = destroyOverlay
@@ -1353,18 +1364,23 @@ function Library:CreateWindow(config)
 
                     local maxVisible = math.min(#options, 6)
                     local popupHeight = (maxVisible * 26) + 8
+                    local btnPos = comboBtn.AbsolutePosition
+                    local btnSize = comboBtn.AbsoluteSize
+
+                    local posX = btnPos.X
+                    local posY = btnPos.Y + btnSize.Y + 4
 
                     dropOverlay = Instance.new("ScrollingFrame")
                     dropOverlay.Name = "MultiDropdownPopup"
-                    dropOverlay.Size = UDim2.new(1, 0, 0, popupHeight)
-                    dropOverlay.Position = UDim2.new(0, 0, 0, 48)
+                    dropOverlay.Size = UDim2.new(0, btnSize.X, 0, popupHeight)
+                    dropOverlay.Position = UDim2.new(0, posX, 0, posY)
                     dropOverlay.BackgroundColor3 = Library.Theme.cardBg
                     dropOverlay.BorderSizePixel = 0
                     dropOverlay.ScrollBarThickness = (#options > 6) and 3 or 0
                     dropOverlay.ScrollBarImageColor3 = Library.Theme.borderBright
                     dropOverlay.CanvasSize = UDim2.new(0, 0, 0, #options * 26 + 6)
-                    dropOverlay.ZIndex = 65
-                    dropOverlay.Parent = container
+                    dropOverlay.ZIndex = 300
+                    dropOverlay.Parent = ScreenGui
 
                     local doc = Instance.new("UICorner")
                     doc.CornerRadius = UDim.new(0, 6)
@@ -1396,14 +1412,14 @@ function Library:CreateWindow(config)
                         optBtn.TextColor3 = isChecked and Library.Theme.accent or Library.Theme.text
                         optBtn.TextXAlignment = Enum.TextXAlignment.Left
                         optBtn.Text = (isChecked and "  ✓  " or "      ") .. tostring(opt)
-                        optBtn.ZIndex = 66
+                        optBtn.ZIndex = 301
                         optBtn.Parent = dropOverlay
 
                         local oc = Instance.new("UICorner")
                         oc.CornerRadius = UDim.new(0, 4)
                         oc.Parent = optBtn
 
-                        optBtn.MouseButton1Click:Connect(function()
+                        local function toggleOption()
                             selected[opt] = not selected[opt]
                             local nowChecked = selected[opt]
                             optBtn.BackgroundColor3 = nowChecked and Library.Theme.inputBg or Color3.fromRGB(0, 0, 0)
@@ -1412,7 +1428,10 @@ function Library:CreateWindow(config)
                             optBtn.Text = (nowChecked and "  ✓  " or "      ") .. tostring(opt)
                             comboBtn.Text = "  " .. formatDisplay()
                             pcall(callback, getSelectedList(), selected)
-                        end)
+                        end
+
+                        optBtn.MouseButton1Click:Connect(toggleOption)
+                        optBtn.MouseButton1Down:Connect(toggleOption)
                     end
 
                     Library.ActiveDropdownCloseFn = destroyOverlay
@@ -1691,15 +1710,21 @@ function Library:CreateWindow(config)
 
                     local popupW = 200
                     local popupH = 224
+                    local btnPos = cBtn.AbsolutePosition
+                    local btnSize = cBtn.AbsoluteSize
+                    local vpSize = Camera.ViewportSize or Vector2.new(1920, 1080)
+
+                    local posX = math.clamp(btnPos.X + btnSize.X - popupW, 10, math.max(10, vpSize.X - popupW - 10))
+                    local posY = btnPos.Y + btnSize.Y + 4
 
                     dropOverlay = Instance.new("Frame")
                     dropOverlay.Name = "ColorPickerPopup"
                     dropOverlay.Size = UDim2.new(0, popupW, 0, popupH)
-                    dropOverlay.Position = UDim2.new(1, -popupW, 0, 26)
+                    dropOverlay.Position = UDim2.new(0, posX, 0, posY)
                     dropOverlay.BackgroundColor3 = Library.Theme.cardBg
                     dropOverlay.BorderSizePixel = 0
-                    dropOverlay.ZIndex = 65
-                    dropOverlay.Parent = row
+                    dropOverlay.ZIndex = 300
+                    dropOverlay.Parent = ScreenGui
 
                     local doc = Instance.new("UICorner")
                     doc.CornerRadius = UDim.new(0, 8)
