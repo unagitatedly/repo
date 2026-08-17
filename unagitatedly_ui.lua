@@ -61,6 +61,39 @@ local function CreateStroke(parent, color, thickness, trans)
     return s
 end
 
+local function MakeDraggable(handle, frame)
+    local isDragging = false
+    local dragStart = Vector3.new()
+    local startPos = UDim2.new()
+
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            Library:CloseDropdown()
+            isDragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isDragging = false
+        end
+    end)
+end
+
 local ScreenParent = LocalPlayer:WaitForChild("PlayerGui")
 pcall(function()
     if gethui then
@@ -273,25 +306,7 @@ function Library:CreateWindow(config)
     HeaderBar.ZIndex = 3
     HeaderBar.Parent = MainFrame
 
-    local isDragging, dragStart, startPos = false, nil, nil
-    HeaderBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            Library:CloseDropdown()
-            isDragging = true
-            dragStart = input.Position
-            startPos = MainFrame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then isDragging = false end
-            end)
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - dragStart
-            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
+    MakeDraggable(HeaderBar, MainFrame)
 
     local BrandContainer = Instance.new("Frame")
     BrandContainer.Size = UDim2.new(1, -70, 1, 0)
@@ -1822,11 +1837,11 @@ function Library:CreateWatermark(wConfig)
     Watermark.Name = "Watermark"
     Watermark.AutomaticSize = Enum.AutomaticSize.X
     Watermark.Size = UDim2.new(0, 0, 0, 24)
-    Watermark.Position = UDim2.new(1, -260, 0, 15)
+    Watermark.Position = UDim2.new(1, -260, 0, 45)
     Watermark.BackgroundColor3 = Library.Theme.windowBg
     Watermark.BorderSizePixel = 0
     Watermark.Active = true
-    Watermark.ZIndex = 10
+    Watermark.ZIndex = 20
     Watermark.Parent = parentGui
 
     local wmc = Instance.new("UICorner")
@@ -1839,23 +1854,7 @@ function Library:CreateWatermark(wConfig)
     wmPad.PaddingRight = UDim.new(0, 10)
     wmPad.Parent = Watermark
 
-    local isDragging, dragStart, startPos = false, nil, nil
-    Watermark.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            isDragging = true
-            dragStart = input.Position
-            startPos = Watermark.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then isDragging = false end
-            end)
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - dragStart
-            Watermark.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
+    MakeDraggable(Watermark, Watermark)
 
     local wmLabel = Instance.new("TextLabel")
     wmLabel.AutomaticSize = Enum.AutomaticSize.X
@@ -1866,7 +1865,7 @@ function Library:CreateWatermark(wConfig)
     wmLabel.TextColor3 = Library.Theme.text
     wmLabel.TextXAlignment = Enum.TextXAlignment.Left
     wmLabel.RichText = true
-    wmLabel.ZIndex = 11
+    wmLabel.ZIndex = 21
     wmLabel.Parent = Watermark
 
     local currentTitle = Title
@@ -1913,7 +1912,7 @@ function Library:CreateKeybindHUD(hConfig)
     KeybindHud.BackgroundColor3 = Library.Theme.windowBg
     KeybindHud.BorderSizePixel = 0
     KeybindHud.Active = true
-    KeybindHud.ZIndex = 10
+    KeybindHud.ZIndex = 20
     KeybindHud.Parent = parentGui
 
     local khc = Instance.new("UICorner")
@@ -1937,26 +1936,11 @@ function Library:CreateKeybindHUD(hConfig)
     khTitleBar.Size = UDim2.new(1, 0, 0, 18)
     khTitleBar.BackgroundTransparency = 1
     khTitleBar.LayoutOrder = 1
-    khTitleBar.ZIndex = 11
+    khTitleBar.ZIndex = 21
     khTitleBar.Parent = KeybindHud
 
-    local isDragging, dragStart, startPos = false, nil, nil
-    khTitleBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            isDragging = true
-            dragStart = input.Position
-            startPos = KeybindHud.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then isDragging = false end
-            end)
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - dragStart
-            KeybindHud.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
+    MakeDraggable(khTitleBar, KeybindHud)
+    MakeDraggable(KeybindHud, KeybindHud)
 
     local khTitle = Instance.new("TextLabel")
     khTitle.Size = UDim2.new(1, 0, 1, 0)
