@@ -1122,9 +1122,6 @@ function Library:CreateWindow(config)
 
                     local posX = btnPos.X
                     local posY = btnPos.Y + btnSize.Y + 4
-                    if posY + popupHeight > vpSize.Y - 10 then
-                        posY = math.max(10, btnPos.Y - popupHeight - 4)
-                    end
 
                     dropOverlay = Instance.new("ScrollingFrame")
                     dropOverlay.Name = "DropdownPopup"
@@ -1358,9 +1355,6 @@ function Library:CreateWindow(config)
 
                     local posX = btnPos.X
                     local posY = btnPos.Y + btnSize.Y + 4
-                    if posY + popupHeight > vpSize.Y - 10 then
-                        posY = math.max(10, btnPos.Y - popupHeight - 4)
-                    end
 
                     dropOverlay = Instance.new("ScrollingFrame")
                     dropOverlay.Name = "MultiDropdownPopup"
@@ -1703,9 +1697,6 @@ function Library:CreateWindow(config)
 
                     local posX = math.clamp(btnPos.X + btnSize.X - popupW, 10, math.max(10, vpSize.X - popupW - 10))
                     local posY = btnPos.Y + btnSize.Y + 4
-                    if posY + popupH > vpSize.Y - 10 then
-                        posY = math.max(10, btnPos.Y - popupH - 4)
-                    end
 
                     dropOverlay = Instance.new("Frame")
                     dropOverlay.Name = "ColorPickerPopup"
