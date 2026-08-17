@@ -124,14 +124,21 @@ function Library:Notify(nConfig)
         Library.NotificationContainer = notifBox
     end
 
+    local wrapper = Instance.new("Frame")
+    wrapper.Size = UDim2.new(1, 0, 0, 58)
+    wrapper.BackgroundTransparency = 1
+    wrapper.ClipsDescendants = false
+    wrapper.ZIndex = 501
+    wrapper.Parent = Library.NotificationContainer
+
     local card = Instance.new("Frame")
-    card.Size = UDim2.new(1, 0, 0, 58)
+    card.Size = UDim2.new(1, 0, 1, 0)
     card.BackgroundColor3 = Library.Theme.cardBg
     card.BackgroundTransparency = 0.05
-    card.Position = UDim2.new(1, 50, 0, 0)
+    card.Position = UDim2.new(1, 60, 0, 0)
     card.BorderSizePixel = 0
-    card.ZIndex = 501
-    card.Parent = Library.NotificationContainer
+    card.ZIndex = 502
+    card.Parent = wrapper
 
     local cc = Instance.new("UICorner")
     cc.CornerRadius = UDim.new(0, 8)
@@ -144,7 +151,7 @@ function Library:Notify(nConfig)
     accentBar.Position = UDim2.new(0, 6, 0, 7)
     accentBar.BackgroundColor3 = Library.Theme.accent
     accentBar.BorderSizePixel = 0
-    accentBar.ZIndex = 502
+    accentBar.ZIndex = 503
     accentBar.Parent = card
 
     local abc = Instance.new("UICorner")
@@ -160,7 +167,7 @@ function Library:Notify(nConfig)
     tLbl.TextColor3 = Library.Theme.accent
     tLbl.TextXAlignment = Enum.TextXAlignment.Left
     tLbl.Text = title
-    tLbl.ZIndex = 502
+    tLbl.ZIndex = 503
     tLbl.Parent = card
 
     local cLbl = Instance.new("TextLabel")
@@ -173,20 +180,20 @@ function Library:Notify(nConfig)
     cLbl.TextXAlignment = Enum.TextXAlignment.Left
     cLbl.TextWrapped = true
     cLbl.Text = content
-    cLbl.ZIndex = 502
+    cLbl.ZIndex = 503
     cLbl.Parent = card
 
-    Tween(card, { Position = UDim2.new(0, 0, 0, 0) }, 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    Tween(card, { Position = UDim2.new(0, 0, 0, 0) }, 0.28, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
     task.delay(duration, function()
-        if card and card.Parent then
-            local tw = Tween(card, { Position = UDim2.new(1, 50, 0, 0), BackgroundTransparency = 1 }, 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+        if card and card.Parent and wrapper and wrapper.Parent then
+            local tw = Tween(card, { Position = UDim2.new(1, 60, 0, 0), BackgroundTransparency = 1 }, 0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
             Tween(stroke, { Transparency = 1 }, 0.2)
             Tween(tLbl, { TextTransparency = 1 }, 0.2)
             Tween(cLbl, { TextTransparency = 1 }, 0.2)
             Tween(accentBar, { BackgroundTransparency = 1 }, 0.2)
             tw.Completed:Connect(function()
-                card:Destroy()
+                wrapper:Destroy()
             end)
         end
     end)
@@ -468,8 +475,9 @@ function Library:CreateWindow(config)
         updateHeaderLayout()
     end
 
-    function WindowObj:SetVersion(ver)
+    function WindowObj:SetVersion(ver, col)
         VersionLabel.Text = tostring(ver or "")
+        if col then VersionLabel.TextColor3 = ParseColor(col) end
     end
 
     function WindowObj:SetFooter(cfg)
