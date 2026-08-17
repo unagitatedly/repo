@@ -73,11 +73,6 @@ local State = {
     CrosshairColor = Color3.fromRGB(255, 255, 255),
 }
 
-AimbotCard:CreateParagraph({
-    Title = "Aimbot Information",
-    Content = "Configure aimbot vector calculation, hitbox targeting priority, and smoothing interpolation."
-})
-
 AimbotCard:CreateToggle({
     Name = "Enable Silent Aim",
     Default = false,
