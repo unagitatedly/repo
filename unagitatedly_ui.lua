@@ -125,10 +125,10 @@ function Library:Notify(nConfig)
     end
 
     local card = Instance.new("Frame")
-    card.Size = UDim2.new(1, 0, 0, 56)
+    card.Size = UDim2.new(1, 0, 0, 58)
     card.BackgroundColor3 = Library.Theme.cardBg
     card.BackgroundTransparency = 0.05
-    card.Position = UDim2.new(1, 300, 0, 0)
+    card.Position = UDim2.new(1, 50, 0, 0)
     card.BorderSizePixel = 0
     card.ZIndex = 501
     card.Parent = Library.NotificationContainer
@@ -139,15 +139,21 @@ function Library:Notify(nConfig)
 
     local stroke = CreateStroke(card, Library.Theme.borderBright, 1, 0)
 
-    local pad = Instance.new("UIPadding")
-    pad.PaddingTop = UDim.new(0, 8)
-    pad.PaddingBottom = UDim.new(0, 8)
-    pad.PaddingLeft = UDim.new(0, 12)
-    pad.PaddingRight = UDim.new(0, 12)
-    pad.Parent = card
+    local accentBar = Instance.new("Frame")
+    accentBar.Size = UDim2.new(0, 3, 1, -14)
+    accentBar.Position = UDim2.new(0, 6, 0, 7)
+    accentBar.BackgroundColor3 = Library.Theme.accent
+    accentBar.BorderSizePixel = 0
+    accentBar.ZIndex = 502
+    accentBar.Parent = card
+
+    local abc = Instance.new("UICorner")
+    abc.CornerRadius = UDim.new(1, 0)
+    abc.Parent = accentBar
 
     local tLbl = Instance.new("TextLabel")
-    tLbl.Size = UDim2.new(1, 0, 0, 16)
+    tLbl.Size = UDim2.new(1, -24, 0, 16)
+    tLbl.Position = UDim2.new(0, 16, 0, 8)
     tLbl.BackgroundTransparency = 1
     tLbl.Font = Library.Theme.fontBold
     tLbl.TextSize = 12
@@ -158,8 +164,8 @@ function Library:Notify(nConfig)
     tLbl.Parent = card
 
     local cLbl = Instance.new("TextLabel")
-    cLbl.Size = UDim2.new(1, 0, 0, 22)
-    cLbl.Position = UDim2.new(0, 0, 0, 18)
+    cLbl.Size = UDim2.new(1, -24, 0, 24)
+    cLbl.Position = UDim2.new(0, 16, 0, 24)
     cLbl.BackgroundTransparency = 1
     cLbl.Font = Library.Theme.font
     cLbl.TextSize = 11
@@ -170,14 +176,15 @@ function Library:Notify(nConfig)
     cLbl.ZIndex = 502
     cLbl.Parent = card
 
-    Tween(card, { BackgroundTransparency = 0 }, 0.2)
+    Tween(card, { Position = UDim2.new(0, 0, 0, 0) }, 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
     task.delay(duration, function()
         if card and card.Parent then
-            local tw = Tween(card, { BackgroundTransparency = 1 }, 0.25)
-            Tween(stroke, { Transparency = 1 }, 0.25)
-            Tween(tLbl, { TextTransparency = 1 }, 0.25)
-            Tween(cLbl, { TextTransparency = 1 }, 0.25)
+            local tw = Tween(card, { Position = UDim2.new(1, 50, 0, 0), BackgroundTransparency = 1 }, 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+            Tween(stroke, { Transparency = 1 }, 0.2)
+            Tween(tLbl, { TextTransparency = 1 }, 0.2)
+            Tween(cLbl, { TextTransparency = 1 }, 0.2)
+            Tween(accentBar, { BackgroundTransparency = 1 }, 0.2)
             tw.Completed:Connect(function()
                 card:Destroy()
             end)
@@ -268,7 +275,10 @@ function Library:CreateWindow(config)
     UserInputService.InputChanged:Connect(function(input)
         if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
-            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            local vp = Camera.ViewportSize or Vector2.new(1920, 1080)
+            local targetX = math.clamp(startPos.X.Offset + delta.X, -Size.X.Offset * 0.5 + 20, vp.X - Size.X.Offset * 0.5 - 20)
+            local targetY = math.clamp(startPos.Y.Offset + delta.Y, -Size.Y.Offset * 0.5 + 20, vp.Y - Size.Y.Offset * 0.5 - 20)
+            MainFrame.Position = UDim2.new(startPos.X.Scale, targetX, startPos.Y.Scale, targetY)
         end
     end)
 
@@ -475,6 +485,18 @@ function Library:CreateWindow(config)
         end
     end
 
+    function WindowObj:SetTheme(newTheme)
+        if typeof(newTheme) == "table" then
+            for k, v in pairs(newTheme) do
+                Library.Theme[k] = (typeof(v) == "string" and v:sub(1, 1) == "#") and ParseColor(v) or v
+            end
+            MainFrame.BackgroundColor3 = Library.Theme.windowBg
+            TitleLabel.TextColor3 = Library.Theme.accent
+            SubTitleLabel.TextColor3 = Library.Theme.text
+            StandardBadge.TextColor3 = Library.Theme.accent
+        end
+    end
+
     function WindowObj:Toggle()
         MainFrame.Visible = not MainFrame.Visible
         if not MainFrame.Visible then Library:CloseDropdown() end
@@ -542,6 +564,17 @@ function Library:CreateWindow(config)
 
         btn.MouseButton1Click:Connect(function()
             WindowObj:SwitchTab(name)
+        end)
+
+        btn.MouseEnter:Connect(function()
+            if WindowObj.CurrentTab ~= name then
+                Tween(btn, { BackgroundTransparency = 0.5, BackgroundColor3 = Color3.fromRGB(18, 18, 26) }, 0.12)
+            end
+        end)
+        btn.MouseLeave:Connect(function()
+            if WindowObj.CurrentTab ~= name then
+                Tween(btn, { BackgroundTransparency = 1, BackgroundColor3 = Color3.fromRGB(11, 11, 16) }, 0.12)
+            end
         end)
 
         local page = Instance.new("ScrollingFrame")
@@ -729,6 +762,13 @@ function Library:CreateWindow(config)
                     pcall(callback, state)
                 end
 
+                clickArea.MouseEnter:Connect(function()
+                    Tween(bs, { Color = state and Library.Theme.accentBright or Library.Theme.accent }, 0.12)
+                end)
+                clickArea.MouseLeave:Connect(function()
+                    Tween(bs, { Color = state and Library.Theme.accent or Library.Theme.borderBright }, 0.12)
+                end)
+
                 clickArea.MouseButton1Click:Connect(function()
                     SetState(not state)
                 end)
@@ -761,11 +801,12 @@ function Library:CreateWindow(config)
                 topLabel.TextSize = 11
                 topLabel.TextColor3 = Library.Theme.textMuted
                 topLabel.TextXAlignment = Enum.TextXAlignment.Left
+                topLabel.TextTruncate = Enum.TextTruncate.AtEnd
                 topLabel.Text = name
                 topLabel.ZIndex = 4
                 topLabel.Parent = container
 
-                local valLabel = Instance.new("TextLabel")
+                local valLabel = Instance.new("TextBox")
                 valLabel.Size = UDim2.new(0.4, 0, 0, 14)
                 valLabel.Position = UDim2.new(0.6, 0, 0, 0)
                 valLabel.BackgroundTransparency = 1
@@ -773,7 +814,8 @@ function Library:CreateWindow(config)
                 valLabel.TextSize = 11
                 valLabel.TextColor3 = Library.Theme.text
                 valLabel.TextXAlignment = Enum.TextXAlignment.Right
-                valLabel.ZIndex = 4
+                valLabel.ClearTextOnFocus = false
+                valLabel.ZIndex = 5
                 valLabel.Parent = container
 
                 local track = Instance.new("Frame")
@@ -828,6 +870,15 @@ function Library:CreateWindow(config)
                     valLabel.Text = string.format(formatStr, currentVal)
                     pcall(callback, currentVal)
                 end
+
+                valLabel.FocusLost:Connect(function()
+                    local num = tonumber(valLabel.Text:match("[%-%d%.]+"))
+                    if num then
+                        SetValue(num)
+                    else
+                        valLabel.Text = string.format(formatStr, currentVal)
+                    end
+                end)
 
                 SetValue(defaultVal)
 
@@ -941,7 +992,8 @@ function Library:CreateWindow(config)
 
                 local function destroyOverlay()
                     if dropBlocker then dropBlocker:Destroy() dropBlocker = nil end
-                    if dropOverlay then dropOverlay:Destroy() dropOverlay = nil chevron.Text = "v" end
+                    if dropOverlay then dropOverlay:Destroy() dropOverlay = nil end
+                    Tween(chevron, { Rotation = 0 }, 0.15)
                 end
 
                 comboBtn.MouseButton1Click:Connect(function()
@@ -951,7 +1003,7 @@ function Library:CreateWindow(config)
                     end
 
                     Library:CloseDropdown()
-                    chevron.Text = "^"
+                    Tween(chevron, { Rotation = 180 }, 0.15)
 
                     dropBlocker = Instance.new("TextButton")
                     dropBlocker.Name = "DropdownBackdrop"
@@ -967,11 +1019,20 @@ function Library:CreateWindow(config)
 
                     local maxVisible = math.min(#options, 6)
                     local popupHeight = (maxVisible * 26) + 8
+                    local vpSize = Camera.ViewportSize or Vector2.new(1920, 1080)
+                    local btnPos = comboBtn.AbsolutePosition
+                    local btnSize = comboBtn.AbsoluteSize
+
+                    local posX = btnPos.X
+                    local posY = btnPos.Y + btnSize.Y + 4
+                    if posY + popupHeight > vpSize.Y - 10 then
+                        posY = math.max(10, btnPos.Y - popupHeight - 4)
+                    end
 
                     dropOverlay = Instance.new("ScrollingFrame")
                     dropOverlay.Name = "DropdownPopup"
-                    dropOverlay.Size = UDim2.new(0, comboBtn.AbsoluteSize.X, 0, popupHeight)
-                    dropOverlay.Position = UDim2.new(0, comboBtn.AbsolutePosition.X, 0, comboBtn.AbsolutePosition.Y + comboBtn.AbsoluteSize.Y + 4)
+                    dropOverlay.Size = UDim2.new(0, btnSize.X, 0, popupHeight)
+                    dropOverlay.Position = UDim2.new(0, posX, 0, posY)
                     dropOverlay.BackgroundColor3 = Library.Theme.cardBg
                     dropOverlay.BorderSizePixel = 0
                     dropOverlay.ScrollBarThickness = (#options > 6) and 3 or 0
@@ -1094,12 +1155,13 @@ function Library:CreateWindow(config)
                 row.Parent = card
 
                 local lbl = Instance.new("TextLabel")
-                lbl.Size = UDim2.new(0.65, 0, 1, 0)
+                lbl.Size = UDim2.new(1, -78, 1, 0)
                 lbl.BackgroundTransparency = 1
                 lbl.Font = Library.Theme.fontBold
                 lbl.TextSize = 11
                 lbl.TextColor3 = Library.Theme.textMuted
                 lbl.TextXAlignment = Enum.TextXAlignment.Left
+                lbl.TextTruncate = Enum.TextTruncate.AtEnd
                 lbl.Text = name
                 lbl.ZIndex = 4
                 lbl.Parent = row
@@ -1131,8 +1193,13 @@ function Library:CreateWindow(config)
                     local conn
                     conn = UserInputService.InputBegan:Connect(function(input)
                         if input.UserInputType == Enum.UserInputType.Keyboard then
-                            currentKey = input.KeyCode
-                            keyBtn.Text = "[" .. currentKey.Name .. "]"
+                            if input.KeyCode == Enum.KeyCode.Escape or input.KeyCode == Enum.KeyCode.Backspace or input.KeyCode == Enum.KeyCode.Delete then
+                                currentKey = nil
+                                keyBtn.Text = "[None]"
+                            else
+                                currentKey = input.KeyCode
+                                keyBtn.Text = "[" .. currentKey.Name .. "]"
+                            end
                             listening = false
                             Tween(ks, { Color = Library.Theme.border }, 0.12)
                             conn:Disconnect()
@@ -1634,6 +1701,81 @@ function Library:CreateWindow(config)
                 }
             end
 
+            function CardObj:CreateDivider()
+                local line = Instance.new("Frame")
+                line.Size = UDim2.new(1, 0, 0, 1)
+                line.BackgroundColor3 = Library.Theme.border
+                line.BorderSizePixel = 0
+                line.LayoutOrder = #card:GetChildren() + 1
+                line.ZIndex = 4
+                line.Parent = card
+                return line
+            end
+
+            function CardObj:CreateParagraph(pConfig)
+                pConfig = pConfig or {}
+                local pTitle = pConfig.Title or "Info"
+                local pContent = pConfig.Content or ""
+
+                local pBox = Instance.new("Frame")
+                pBox.Size = UDim2.new(1, 0, 0, 0)
+                pBox.AutomaticSize = Enum.AutomaticSize.Y
+                pBox.BackgroundColor3 = Library.Theme.inputBg
+                pBox.BorderSizePixel = 0
+                pBox.LayoutOrder = #card:GetChildren() + 1
+                pBox.ZIndex = 4
+                pBox.Parent = card
+
+                local pbc = Instance.new("UICorner")
+                pbc.CornerRadius = UDim.new(0, 6)
+                pbc.Parent = pBox
+                CreateStroke(pBox, Library.Theme.border, 1, 0)
+
+                local pPad = Instance.new("UIPadding")
+                pPad.PaddingTop = UDim.new(0, 8)
+                pPad.PaddingBottom = UDim.new(0, 8)
+                pPad.PaddingLeft = UDim.new(0, 10)
+                pPad.PaddingRight = UDim.new(0, 10)
+                pPad.Parent = pBox
+
+                local pLayout = Instance.new("UIListLayout")
+                pLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                pLayout.Padding = UDim.new(0, 4)
+                pLayout.Parent = pBox
+
+                local tLbl = Instance.new("TextLabel")
+                tLbl.Size = UDim2.new(1, 0, 0, 14)
+                tLbl.BackgroundTransparency = 1
+                tLbl.Font = Library.Theme.fontBold
+                tLbl.TextSize = 11
+                tLbl.TextColor3 = Library.Theme.accent
+                tLbl.TextXAlignment = Enum.TextXAlignment.Left
+                tLbl.Text = pTitle
+                tLbl.LayoutOrder = 1
+                tLbl.ZIndex = 5
+                tLbl.Parent = pBox
+
+                local cLbl = Instance.new("TextLabel")
+                cLbl.Size = UDim2.new(1, 0, 0, 0)
+                cLbl.AutomaticSize = Enum.AutomaticSize.Y
+                cLbl.BackgroundTransparency = 1
+                cLbl.Font = Library.Theme.font
+                cLbl.TextSize = 10
+                cLbl.TextColor3 = Library.Theme.textMuted
+                cLbl.TextXAlignment = Enum.TextXAlignment.Left
+                cLbl.TextWrapped = true
+                cLbl.Text = pContent
+                cLbl.LayoutOrder = 2
+                cLbl.ZIndex = 5
+                cLbl.Parent = pBox
+
+                return {
+                    SetTitle = function(t) tLbl.Text = tostring(t or "") end,
+                    SetContent = function(c) cLbl.Text = tostring(c or "") end,
+                    Instance = pBox
+                }
+            end
+
             return CardObj
         end
 
@@ -1666,8 +1808,9 @@ function Library:CreateWatermark(wConfig)
 
     local Watermark = Instance.new("Frame")
     Watermark.Name = "Watermark"
-    Watermark.Size = UDim2.new(0, 240, 0, 24)
-    Watermark.Position = UDim2.new(1, -255, 0, 15)
+    Watermark.AutomaticSize = Enum.AutomaticSize.X
+    Watermark.Size = UDim2.new(0, 0, 0, 24)
+    Watermark.Position = UDim2.new(1, -260, 0, 15)
     Watermark.BackgroundColor3 = Library.Theme.windowBg
     Watermark.BorderSizePixel = 0
     Watermark.Active = true
@@ -1678,6 +1821,11 @@ function Library:CreateWatermark(wConfig)
     wmc.CornerRadius = UDim.new(0, 6)
     wmc.Parent = Watermark
     CreateStroke(Watermark, Library.Theme.border, 1, 0)
+
+    local wmPad = Instance.new("UIPadding")
+    wmPad.PaddingLeft = UDim.new(0, 10)
+    wmPad.PaddingRight = UDim.new(0, 10)
+    wmPad.Parent = Watermark
 
     local isDragging, dragStart, startPos = false, nil, nil
     Watermark.InputBegan:Connect(function(input)
@@ -1698,8 +1846,8 @@ function Library:CreateWatermark(wConfig)
     end)
 
     local wmLabel = Instance.new("TextLabel")
-    wmLabel.Size = UDim2.new(1, -12, 1, 0)
-    wmLabel.Position = UDim2.new(0, 6, 0, 0)
+    wmLabel.AutomaticSize = Enum.AutomaticSize.X
+    wmLabel.Size = UDim2.new(0, 0, 1, 0)
     wmLabel.BackgroundTransparency = 1
     wmLabel.Font = Library.Theme.fontBold
     wmLabel.TextSize = 10
@@ -1732,6 +1880,7 @@ end
 function Library:CreateKeybindHUD(hConfig)
     hConfig = hConfig or {}
     local Title = hConfig.Title or "Active Modules"
+    local onlyActive = hConfig.OnlyActive or false
 
     local parentGui = Library.ScreenGui or ScreenParent:FindFirstChildOfClass("ScreenGui")
     if not parentGui then
@@ -1746,7 +1895,8 @@ function Library:CreateKeybindHUD(hConfig)
 
     local KeybindHud = Instance.new("Frame")
     KeybindHud.Name = "KeybindHUD"
-    KeybindHud.Size = UDim2.new(0, 175, 0, 180)
+    KeybindHud.AutomaticSize = Enum.AutomaticSize.Y
+    KeybindHud.Size = UDim2.new(0, 185, 0, 0)
     KeybindHud.Position = UDim2.new(0, 20, 0.5, -90)
     KeybindHud.BackgroundColor3 = Library.Theme.windowBg
     KeybindHud.BorderSizePixel = 0
@@ -1759,9 +1909,22 @@ function Library:CreateKeybindHUD(hConfig)
     khc.Parent = KeybindHud
     CreateStroke(KeybindHud, Library.Theme.border, 1, 0)
 
+    local khPad = Instance.new("UIPadding")
+    khPad.PaddingTop = UDim.new(0, 8)
+    khPad.PaddingBottom = UDim.new(0, 10)
+    khPad.PaddingLeft = UDim.new(0, 12)
+    khPad.PaddingRight = UDim.new(0, 12)
+    khPad.Parent = KeybindHud
+
+    local khLayout = Instance.new("UIListLayout")
+    khLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    khLayout.Padding = UDim.new(0, 6)
+    khLayout.Parent = KeybindHud
+
     local khTitleBar = Instance.new("Frame")
-    khTitleBar.Size = UDim2.new(1, 0, 0, 26)
+    khTitleBar.Size = UDim2.new(1, 0, 0, 18)
     khTitleBar.BackgroundTransparency = 1
+    khTitleBar.LayoutOrder = 1
     khTitleBar.ZIndex = 11
     khTitleBar.Parent = KeybindHud
 
@@ -1784,8 +1947,7 @@ function Library:CreateKeybindHUD(hConfig)
     end)
 
     local khTitle = Instance.new("TextLabel")
-    khTitle.Size = UDim2.new(1, -20, 1, 0)
-    khTitle.Position = UDim2.new(0, 10, 0, 0)
+    khTitle.Size = UDim2.new(1, 0, 1, 0)
     khTitle.BackgroundTransparency = 1
     khTitle.Font = Library.Theme.fontBold
     khTitle.TextSize = 11
@@ -1796,16 +1958,17 @@ function Library:CreateKeybindHUD(hConfig)
     khTitle.Parent = khTitleBar
 
     local khList = Instance.new("Frame")
-    khList.Size = UDim2.new(1, -20, 1, -32)
-    khList.Position = UDim2.new(0, 10, 0, 28)
+    khList.AutomaticSize = Enum.AutomaticSize.Y
+    khList.Size = UDim2.new(1, 0, 0, 0)
     khList.BackgroundTransparency = 1
+    khList.LayoutOrder = 2
     khList.ZIndex = 11
     khList.Parent = KeybindHud
 
-    local khLayout = Instance.new("UIListLayout")
-    khLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    khLayout.Padding = UDim.new(0, 3)
-    khLayout.Parent = khList
+    local listLayout = Instance.new("UIListLayout")
+    listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    listLayout.Padding = UDim.new(0, 4)
+    listLayout.Parent = khList
 
     local TrackedModules = {}
 
@@ -1819,7 +1982,15 @@ function Library:CreateKeybindHUD(hConfig)
         KeybindHud.Visible = not not v
     end
 
-    function HudObj:Register(name, getterFn)
+    function HudObj:SetOnlyActive(val)
+        onlyActive = not not val
+    end
+
+    function HudObj:Register(nameOrCfg, getterFn, keyBind)
+        local name = typeof(nameOrCfg) == "table" and nameOrCfg.Name or tostring(nameOrCfg or "Module")
+        local getter = typeof(nameOrCfg) == "table" and nameOrCfg.Getter or getterFn or function() return false end
+        local key = typeof(nameOrCfg) == "table" and nameOrCfg.Key or keyBind
+
         local row = Instance.new("Frame")
         row.Size = UDim2.new(1, 0, 0, 16)
         row.BackgroundTransparency = 1
@@ -1828,40 +1999,62 @@ function Library:CreateKeybindHUD(hConfig)
         row.Parent = khList
 
         local nLbl = Instance.new("TextLabel")
-        nLbl.Size = UDim2.new(0.65, 0, 1, 0)
+        nLbl.Size = UDim2.new(1, -50, 1, 0)
         nLbl.BackgroundTransparency = 1
         nLbl.Font = Library.Theme.font
         nLbl.TextSize = 10
         nLbl.TextColor3 = Library.Theme.text
         nLbl.TextXAlignment = Enum.TextXAlignment.Left
+        nLbl.TextTruncate = Enum.TextTruncate.AtEnd
         nLbl.Text = name
         nLbl.ZIndex = 11
         nLbl.Parent = row
 
         local sLbl = Instance.new("TextLabel")
-        sLbl.Size = UDim2.new(0.35, 0, 1, 0)
-        sLbl.Position = UDim2.new(0.65, 0, 0, 0)
+        sLbl.Size = UDim2.new(0, 48, 1, 0)
+        sLbl.Position = UDim2.new(1, -48, 0, 0)
         sLbl.BackgroundTransparency = 1
         sLbl.Font = Library.Theme.fontBold
         sLbl.TextSize = 10
         sLbl.TextColor3 = Library.Theme.textMuted
         sLbl.TextXAlignment = Enum.TextXAlignment.Right
-        sLbl.Text = "[OFF]"
+        sLbl.RichText = true
+        sLbl.Text = "<font color='#73738a'>[OFF]</font>"
         sLbl.ZIndex = 11
         sLbl.Parent = row
 
-        table.insert(TrackedModules, { Label = sLbl, Getter = getterFn })
+        table.insert(TrackedModules, {
+            Row = row,
+            NameLabel = nLbl,
+            StateLabel = sLbl,
+            Getter = getter,
+            Key = key
+        })
     end
 
     RunService.RenderStepped:Connect(function()
         for _, item in ipairs(TrackedModules) do
             local success, state = pcall(item.Getter)
-            if success and state then
-                item.Label.Text = "<font color='#22c55e'>[ON]</font>"
+            local isActive = success and not not state
+            if onlyActive then
+                item.Row.Visible = isActive
             else
-                item.Label.Text = "<font color='#73738a'>[OFF]</font>"
+                item.Row.Visible = true
             end
-            item.Label.RichText = true
+
+            local keyPrefix = ""
+            if item.Key then
+                local kName = typeof(item.Key) == "EnumItem" and item.Key.Name or tostring(item.Key)
+                keyPrefix = string.format("<font color='#a0a0b8'>[%s]</font> ", kName)
+            end
+
+            if isActive then
+                item.StateLabel.Text = keyPrefix .. "<font color='#22c55e'>[ON]</font>"
+                item.NameLabel.TextColor3 = Library.Theme.text
+            else
+                item.StateLabel.Text = keyPrefix .. "<font color='#73738a'>[OFF]</font>"
+                item.NameLabel.TextColor3 = Library.Theme.textMuted
+            end
         end
     end)
 
