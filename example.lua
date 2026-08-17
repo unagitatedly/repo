@@ -43,14 +43,27 @@ local State = {
     SmoothY = 4.0,
     TargetBone = "Head",
     ESP = false,
+    Boxes = true,
+    Skeletons = false,
+    Tracers = false,
     Chams = false,
     Fly = false,
-    FlySpeed = 50,
+    FlySpeed = 75,
+    SpeedHack = false,
+    WalkSpeed = 24,
     AimKey = Enum.KeyCode.E,
+    FlyKey = Enum.KeyCode.F,
     AccentColor = Color3.fromRGB(244, 166, 205),
+    EspColor = Color3.fromRGB(130, 200, 255),
+    CrosshairColor = Color3.fromRGB(255, 255, 255),
 }
 
-local AimbotToggle = AimbotCard:CreateToggle({
+AimbotCard:CreateParagraph({
+    Title = "Aimbot Information",
+    Content = "Configure aimbot vector calculation, hitbox targeting priority, and smoothing interpolation."
+})
+
+AimbotCard:CreateToggle({
     Name = "Enable Silent Aim",
     Default = false,
     Callback = function(val)
@@ -58,21 +71,22 @@ local AimbotToggle = AimbotCard:CreateToggle({
         Library:Notify({
             Title = "Aimbot",
             Content = "Silent Aim " .. (val and "Enabled" or "Disabled"),
-            Duration = 2
+            Duration = 2.5
         })
     end
 })
 
-local AimKeybind = AimbotCard:CreateKeybind({
+AimbotCard:CreateKeybind({
     Name = "Aimbot Activation Key",
     Default = Enum.KeyCode.E,
     Callback = function(key)
         State.AimKey = key
-        print("Aim key set to:", key.Name)
     end
 })
 
-local SmoothXSlider = AimbotCard:CreateSlider({
+AimbotCard:CreateDivider()
+
+AimbotCard:CreateSlider({
     Name = "Horizontal Smoothing",
     Min = 1.0,
     Max = 30.0,
@@ -84,7 +98,7 @@ local SmoothXSlider = AimbotCard:CreateSlider({
     end
 })
 
-local SmoothYSlider = AimbotCard:CreateSlider({
+AimbotCard:CreateSlider({
     Name = "Vertical Smoothing",
     Min = 1.0,
     Max = 30.0,
@@ -97,12 +111,11 @@ local SmoothYSlider = AimbotCard:CreateSlider({
 })
 
 local BoneDropdown = AimbotCard:CreateDropdown({
-    Name = "Target Hitbox",
+    Name = "Target Hitbox Bone",
     Options = { "Head", "UpperTorso", "HumanoidRootPart" },
     Default = "Head",
     Callback = function(idx, opt)
         State.TargetBone = opt
-        print("Selected Hitbox:", opt)
     end
 })
 
@@ -115,28 +128,28 @@ WeaponCard:CreateToggle({
 })
 
 WeaponCard:CreateSlider({
-    Name = "Reaction Delay",
+    Name = "Triggerbot Delay",
     Min = 0,
     Max = 200,
     Default = 25,
     Step = 5,
     Format = "%.0f ms",
     Callback = function(val)
-        print("Delay set to:", val)
     end
 })
 
+WeaponCard:CreateDivider()
+
 WeaponCard:CreateTextInput({
     Name = "Target Player Filter",
-    Placeholder = "Enter username...",
+    Placeholder = "Enter target username...",
     Default = "",
     Callback = function(text)
-        print("Filtering for player:", text)
     end
 })
 
 WeaponCard:CreateButton({
-    Name = "Quick Refresh Target List",
+    Name = "Refresh Hitbox Target List",
     Accent = true,
     Callback = function()
         BoneDropdown:Refresh({ "Head", "Neck", "UpperTorso", "LowerTorso", "HumanoidRootPart" }, "Head")
@@ -149,10 +162,10 @@ WeaponCard:CreateButton({
 })
 
 local EspCard = VisualsTab:CreateCard("Player ESP", "Left")
-local ChamCard = VisualsTab:CreateCard("Chams & Colors", "Right")
+local ChamCard = VisualsTab:CreateCard("Chams & Visual Colors", "Right")
 
 EspCard:CreateToggle({
-    Name = "Master ESP",
+    Name = "Master Player ESP",
     Default = false,
     Callback = function(val)
         State.ESP = val
@@ -163,7 +176,7 @@ EspCard:CreateToggle({
     Name = "2D Bounding Boxes",
     Default = true,
     Callback = function(val)
-        print("Box ESP:", val)
+        State.Boxes = val
     end
 })
 
@@ -171,7 +184,23 @@ EspCard:CreateToggle({
     Name = "Skeleton Lines",
     Default = false,
     Callback = function(val)
-        print("Skeleton ESP:", val)
+        State.Skeletons = val
+    end
+})
+
+EspCard:CreateToggle({
+    Name = "Snaplines / Tracers",
+    Default = false,
+    Callback = function(val)
+        State.Tracers = val
+    end
+})
+
+EspCard:CreateColorPicker({
+    Name = "ESP Box Color",
+    Default = Color3.fromRGB(130, 200, 255),
+    Callback = function(col)
+        State.EspColor = col
     end
 })
 
@@ -192,24 +221,42 @@ ChamCard:CreateColorPicker({
 })
 
 ChamCard:CreateSlider({
-    Name = "Fill Transparency",
+    Name = "Chams Transparency",
     Min = 0.0,
     Max = 1.0,
     Default = 0.45,
     Step = 0.05,
     Format = "%.2f",
     Callback = function(val)
-        print("Transparency:", val)
+    end
+})
+
+ChamCard:CreateDivider()
+
+ChamCard:CreateColorPicker({
+    Name = "Crosshair Overlay Color",
+    Default = Color3.fromRGB(255, 255, 255),
+    Callback = function(col)
+        State.CrosshairColor = col
     end
 })
 
 local MoveCard = MiscTab:CreateCard("Movement Modifiers", "Left")
+local ServerCard = MiscTab:CreateCard("Server & Utilities", "Right")
 
 MoveCard:CreateToggle({
     Name = "Fly Mode",
     Default = false,
     Callback = function(val)
         State.Fly = val
+    end
+})
+
+MoveCard:CreateKeybind({
+    Name = "Fly Toggle Key",
+    Default = Enum.KeyCode.F,
+    Callback = function(key)
+        State.FlyKey = key
     end
 })
 
@@ -225,12 +272,72 @@ MoveCard:CreateSlider({
     end
 })
 
+MoveCard:CreateDivider()
+
+MoveCard:CreateToggle({
+    Name = "WalkSpeed Override",
+    Default = false,
+    Callback = function(val)
+        State.SpeedHack = val
+    end
+})
+
+MoveCard:CreateSlider({
+    Name = "Custom WalkSpeed",
+    Min = 16,
+    Max = 150,
+    Default = 24,
+    Step = 1,
+    Format = "%.0f",
+    Callback = function(val)
+        State.WalkSpeed = val
+    end
+})
+
+ServerCard:CreateButton({
+    Name = "Rejoin Current Server",
+    Accent = false,
+    Callback = function()
+        Library:Notify({
+            Title = "Server",
+            Content = "Rejoining server instance...",
+            Duration = 3
+        })
+    end
+})
+
+ServerCard:CreateButton({
+    Name = "Server Hop (Low Ping)",
+    Accent = true,
+    Callback = function()
+        Library:Notify({
+            Title = "Server Hop",
+            Content = "Searching for optimal server...",
+            Duration = 3
+        })
+    end
+})
+
 local CustomCard = SettingsTab:CreateCard("Live UI Customizer", "Left")
-local InfoCard = SettingsTab:CreateCard("Library Information", "Right")
+local InfoCard = SettingsTab:CreateCard("Library Information & Diagnostics", "Right")
+
+local Watermark = Library:CreateWatermark({
+    Title = "unagitatedly"
+})
+
+local KeybindHUD = Library:CreateKeybindHUD({
+    Title = "Active Modules"
+})
+
+KeybindHUD:Register("Silent Aim", function() return State.Aimbot end, Enum.KeyCode.E)
+KeybindHUD:Register("Triggerbot", function() return State.Triggerbot end)
+KeybindHUD:Register("Player ESP", function() return State.ESP end)
+KeybindHUD:Register("Wallhack Chams", function() return State.Chams end)
+KeybindHUD:Register("Fly Mode", function() return State.Fly end, Enum.KeyCode.F)
 
 CustomCard:CreateTextInput({
     Name = "Change UI Title",
-    Placeholder = "New title...",
+    Placeholder = "Enter new window title...",
     Default = "unagitatedly",
     Callback = function(text)
         Window:SetTitle(text)
@@ -239,7 +346,7 @@ CustomCard:CreateTextInput({
 
 CustomCard:CreateTextInput({
     Name = "Change UI Subtitle",
-    Placeholder = "New subtitle...",
+    Placeholder = "Enter new subtitle...",
     Default = " ·  Universal Hub",
     Callback = function(text)
         Window:SetSubTitle(text)
@@ -248,21 +355,87 @@ CustomCard:CreateTextInput({
 
 CustomCard:CreateTextInput({
     Name = "Change Badge Text",
-    Placeholder = "e.g. VIP / Premium",
+    Placeholder = "Enter badge text (e.g. VIP, DEV)...",
     Default = "v2.0",
     Callback = function(text)
         Window:SetBadge(text)
     end
 })
 
+CustomCard:CreateTextInput({
+    Name = "Change Top-Right Version Text",
+    Placeholder = "Enter version (e.g. 2.0, 2.1-beta)...",
+    Default = "2.0",
+    Callback = function(text)
+        Window:SetVersion(text)
+    end
+})
+
+CustomCard:CreateTextInput({
+    Name = "Change Watermark Title",
+    Placeholder = "Enter watermark title...",
+    Default = "unagitatedly",
+    Callback = function(text)
+        Watermark.SetTitle(text)
+    end
+})
+
+CustomCard:CreateTextInput({
+    Name = "Change Keybind HUD Title",
+    Placeholder = "Enter HUD title...",
+    Default = "Active Modules",
+    Callback = function(text)
+        KeybindHUD:SetTitle(text)
+    end
+})
+
+CustomCard:CreateTextInput({
+    Name = "Change Center Footer Text",
+    Placeholder = "Enter center text...",
+    Default = "unagitatedly hub",
+    Callback = function(text)
+        Window:SetFooter({ CenterText = text })
+    end
+})
+
+CustomCard:CreateTextInput({
+    Name = "Change Online Status Count",
+    Placeholder = "Enter online count...",
+    Default = "1,420 online",
+    Callback = function(text)
+        Window:SetFooter({ OnlineText = text })
+    end
+})
+
+CustomCard:CreateDivider()
+
+CustomCard:CreateColorPicker({
+    Name = "Change UI Accent Theme Color",
+    Default = Color3.fromRGB(244, 166, 205),
+    Callback = function(col)
+        Window:SetTheme({
+            accent = col,
+            accentBright = col
+        })
+    end
+})
+
+CustomCard:CreateToggle({
+    Name = "Filter Keybind HUD (Only Active)",
+    Default = false,
+    Callback = function(val)
+        KeybindHUD:SetOnlyActive(val)
+    end
+})
+
 CustomCard:CreateButton({
-    Name = "Send Test Notification",
+    Name = "Send Test Slide Notification",
     Accent = true,
     Callback = function()
         Library:Notify({
-            Title = "unagitatedly",
-            Content = "Everything is customizable and editable!",
-            Duration = 3
+            Title = "Notification Test",
+            Content = "Smooth slide-in and custom real-time editing!",
+            Duration = 3.5
         })
     end
 })
@@ -275,34 +448,35 @@ CustomCard:CreateButton({
     end
 })
 
+InfoCard:CreateParagraph({
+    Title = "Library Specifications",
+    Content = "Standalone Luau UI Framework featuring pixel-perfect alignment, automatic sizing, live customizers, and reactive animations."
+})
+
 InfoCard:CreateLabel({
-    Text = "Version: 2.0 Standalone",
+    Text = "Build: August 14 2026 Standalone",
     Color = "#f4a6cd"
 })
 
 InfoCard:CreateLabel({
-    Text = "Toggle UI with [Insert] Key",
+    Text = "Toggle Menu: [Insert] Key",
     Color = "#73738a"
 })
 
-local Watermark = Library:CreateWatermark({
-    Title = "unagitatedly"
+InfoCard:CreateDivider()
+
+InfoCard:CreateLabel({
+    Text = "Notification Animations: Smooth Quart Slide",
+    Color = "#22c55e"
 })
 
-local KeybindHUD = Library:CreateKeybindHUD({
-    Title = "Active Modules"
+InfoCard:CreateLabel({
+    Text = "Keybind HUD: Dynamic Automatic Height",
+    Color = "#22c55e"
 })
-
-KeybindHUD:Register("Silent Aim", function() return State.Aimbot end)
-KeybindHUD:Register("Triggerbot", function() return State.Triggerbot end)
-KeybindHUD:Register("Player ESP", function() return State.ESP end)
-KeybindHUD:Register("Wallhack Chams", function() return State.Chams end)
-KeybindHUD:Register("Fly Mode", function() return State.Fly end)
 
 Library:Notify({
     Title = "unagitatedly",
-    Content = "UI loaded successfully! Press [Insert] to toggle.",
+    Content = "UI loaded successfully! Press [Insert] to toggle menu.",
     Duration = 4
 })
-
-print("[unagitatedly] Example initialized with full customization!")
