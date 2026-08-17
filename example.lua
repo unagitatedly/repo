@@ -448,6 +448,20 @@ CustomCardRight:CreateToggle({
     end
 })
 
+CustomCardRight:CreateDropdown({
+    Name = "Notification Position",
+    Options = { "Bottom Right", "Top Right", "Bottom Left", "Top Left" },
+    Default = "Bottom Right",
+    Callback = function(idx, opt)
+        Library:SetNotificationPosition(opt)
+        Library:Notify({
+            Title = "Notification Position",
+            Content = "Position set to " .. opt,
+            Duration = 2.5
+        })
+    end
+})
+
 CustomCardRight:CreateButton({
     Name = "Send Test Slide Notification",
     Accent = true,
