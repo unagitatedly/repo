@@ -131,18 +131,22 @@ local function UpdateNotificationContainer()
     if pos == "topright" then
         Library.NotificationContainer.AnchorPoint = Vector2.new(1, 0)
         Library.NotificationContainer.Position = UDim2.new(1, -20, 0, 45)
+        Library.NotificationContainer.Size = UDim2.new(0, 280, 1, -65)
         if layout then layout.VerticalAlignment = Enum.VerticalAlignment.Top end
     elseif pos == "topleft" then
         Library.NotificationContainer.AnchorPoint = Vector2.new(0, 0)
         Library.NotificationContainer.Position = UDim2.new(0, 20, 0, 45)
+        Library.NotificationContainer.Size = UDim2.new(0, 280, 1, -65)
         if layout then layout.VerticalAlignment = Enum.VerticalAlignment.Top end
     elseif pos == "bottomleft" then
         Library.NotificationContainer.AnchorPoint = Vector2.new(0, 1)
         Library.NotificationContainer.Position = UDim2.new(0, 20, 1, -20)
+        Library.NotificationContainer.Size = UDim2.new(0, 280, 1, -65)
         if layout then layout.VerticalAlignment = Enum.VerticalAlignment.Bottom end
     else
         Library.NotificationContainer.AnchorPoint = Vector2.new(1, 1)
         Library.NotificationContainer.Position = UDim2.new(1, -20, 1, -20)
+        Library.NotificationContainer.Size = UDim2.new(0, 280, 1, -65)
         if layout then layout.VerticalAlignment = Enum.VerticalAlignment.Bottom end
     end
 end
@@ -172,8 +176,7 @@ function Library:Notify(nConfig)
     if not Library.NotificationContainer or not Library.NotificationContainer.Parent then
         local notifBox = Instance.new("Frame")
         notifBox.Name = "Notifications"
-        notifBox.Size = UDim2.new(0, 280, 0, 0)
-        notifBox.AutomaticSize = Enum.AutomaticSize.Y
+        notifBox.Size = UDim2.new(0, 280, 1, -65)
         notifBox.BackgroundTransparency = 1
         notifBox.ZIndex = 500
         notifBox.Parent = parentGui
