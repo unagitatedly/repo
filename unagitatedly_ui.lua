@@ -135,10 +135,10 @@ local function UpdateNotificationContainer()
         Library.NotificationContainer.Position = UDim2.new(0, 20, 0, 45)
         if layout then layout.VerticalAlignment = Enum.VerticalAlignment.Top end
     elseif pos == "bottomleft" then
-        Library.NotificationContainer.Position = UDim2.new(0, 20, 1, -40)
+        Library.NotificationContainer.Position = UDim2.new(0, 20, 0, 20)
         if layout then layout.VerticalAlignment = Enum.VerticalAlignment.Bottom end
     else
-        Library.NotificationContainer.Position = UDim2.new(1, -290, 1, -40)
+        Library.NotificationContainer.Position = UDim2.new(1, -290, 0, 20)
         if layout then layout.VerticalAlignment = Enum.VerticalAlignment.Bottom end
     end
 end
