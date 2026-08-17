@@ -1696,6 +1696,10 @@ function Library:CreateWindow(config)
                     Tween(cStroke, { Color = Library.Theme.accent }, 0.12)
                     row.ZIndex = 60
 
+                    local isDraggingSV = false
+                    local isDraggingHue = false
+                    local isDraggingAlpha = false
+
                     dropBlocker = Instance.new("TextButton")
                     dropBlocker.Name = "ColorPickerBackdrop"
                     dropBlocker.Size = UDim2.new(1, 0, 1, 0)
@@ -1704,7 +1708,13 @@ function Library:CreateWindow(config)
                     dropBlocker.ZIndex = 198
                     dropBlocker.Parent = ScreenGui
 
+                    dropBlocker.MouseButton1Down:Connect(function()
+                        if isDraggingSV or isDraggingHue or isDraggingAlpha then return end
+                        Library:CloseDropdown()
+                    end)
+
                     dropBlocker.MouseButton1Click:Connect(function()
+                        if isDraggingSV or isDraggingHue or isDraggingAlpha then return end
                         Library:CloseDropdown()
                     end)
 
@@ -1957,10 +1967,6 @@ function Library:CreateWindow(config)
                             updateColor()
                         end)
                     end
-
-                    local isDraggingSV = false
-                    local isDraggingHue = false
-                    local isDraggingAlpha = false
 
                     local function updateSVFromInput(input)
                         local boxW = svBox.AbsoluteSize.X
