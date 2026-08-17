@@ -330,6 +330,10 @@ function Library:CreateWindow(config)
     MainFrame.ClipsDescendants = false
     MainFrame.Parent = ScreenGui
 
+    local MainScale = Instance.new("UIScale")
+    MainScale.Scale = 1.0
+    MainScale.Parent = MainFrame
+
     local MainCorner = Instance.new("UICorner")
     MainCorner.CornerRadius = UDim.new(0, 14)
     MainCorner.Parent = MainFrame
@@ -566,18 +570,42 @@ function Library:CreateWindow(config)
         Library:SetNotificationPosition(pos)
     end
 
+    local isWindowOpen = true
+    local isWindowAnimating = false
+
+    local function animateWindow(open)
+        if isWindowAnimating then return end
+        if open then
+            MainFrame.Visible = true
+            isWindowOpen = true
+            isWindowAnimating = true
+            MainScale.Scale = 0.92
+            local tw = Tween(MainScale, { Scale = 1.0 }, 0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+            tw.Completed:Connect(function()
+                isWindowAnimating = false
+            end)
+        else
+            Library:CloseDropdown()
+            isWindowAnimating = true
+            local tw = Tween(MainScale, { Scale = 0.92 }, 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+            tw.Completed:Connect(function()
+                MainFrame.Visible = false
+                isWindowOpen = false
+                isWindowAnimating = false
+            end)
+        end
+    end
+
     function WindowObj:Toggle()
-        MainFrame.Visible = not MainFrame.Visible
-        if not MainFrame.Visible then Library:CloseDropdown() end
+        animateWindow(not isWindowOpen)
     end
 
     function WindowObj:Show()
-        MainFrame.Visible = true
+        if not isWindowOpen then animateWindow(true) end
     end
 
     function WindowObj:Hide()
-        MainFrame.Visible = false
-        Library:CloseDropdown()
+        if isWindowOpen then animateWindow(false) end
     end
 
     function WindowObj:Destroy()
@@ -1207,6 +1235,230 @@ function Library:CreateWindow(config)
                 }
             end
 
+            function CardObj:CreateMultiDropdown(mConfig)
+                mConfig = mConfig or {}
+                local name = mConfig.Name or "Multi Dropdown"
+                local options = mConfig.Options or { "Option 1", "Option 2" }
+                local callback = mConfig.Callback or function() end
+
+                local selected = {}
+                if mConfig.Default then
+                    if typeof(mConfig.Default) == "table" then
+                        for k, v in pairs(mConfig.Default) do
+                            if typeof(k) == "number" and typeof(v) == "string" then
+                                selected[v] = true
+                            elseif typeof(k) == "string" and v == true then
+                                selected[k] = true
+                            end
+                        end
+                    elseif typeof(mConfig.Default) == "string" then
+                        selected[mConfig.Default] = true
+                    end
+                end
+
+                local function getSelectedList()
+                    local list = {}
+                    for _, opt in ipairs(options) do
+                        if selected[opt] then table.insert(list, opt) end
+                    end
+                    return list
+                end
+
+                local function formatDisplay()
+                    local list = getSelectedList()
+                    if #list == 0 then return "None" end
+                    return table.concat(list, ", ")
+                end
+
+                local container = Instance.new("Frame")
+                container.Size = UDim2.new(1, 0, 0, 48)
+                container.BackgroundTransparency = 1
+                container.LayoutOrder = #card:GetChildren() + 1
+                container.ZIndex = 4
+                container.Parent = card
+
+                local topLabel = Instance.new("TextLabel")
+                topLabel.Size = UDim2.new(1, 0, 0, 14)
+                topLabel.BackgroundTransparency = 1
+                topLabel.Font = Library.Theme.fontBold
+                topLabel.TextSize = 11
+                topLabel.TextColor3 = Library.Theme.textMuted
+                topLabel.TextXAlignment = Enum.TextXAlignment.Left
+                topLabel.TextTruncate = Enum.TextTruncate.AtEnd
+                topLabel.Text = name
+                topLabel.ZIndex = 4
+                topLabel.Parent = container
+
+                local comboBtn = Instance.new("TextButton")
+                comboBtn.Size = UDim2.new(1, 0, 0, 28)
+                comboBtn.Position = UDim2.new(0, 0, 0, 18)
+                comboBtn.BackgroundColor3 = Library.Theme.inputBg
+                comboBtn.BorderSizePixel = 0
+                comboBtn.Font = Library.Theme.fontBold
+                comboBtn.TextSize = 11
+                comboBtn.TextColor3 = Library.Theme.text
+                comboBtn.TextXAlignment = Enum.TextXAlignment.Left
+                comboBtn.TextTruncate = Enum.TextTruncate.AtEnd
+                comboBtn.Text = "   " .. formatDisplay()
+                comboBtn.ZIndex = 5
+                comboBtn.Parent = container
+
+                local cc2 = Instance.new("UICorner")
+                cc2.CornerRadius = UDim.new(0, 6)
+                cc2.Parent = comboBtn
+
+                CreateStroke(comboBtn, Library.Theme.border, 1, 0)
+
+                local chevron = Instance.new("TextLabel")
+                chevron.Size = UDim2.new(0, 24, 1, 0)
+                chevron.Position = UDim2.new(1, -24, 0, 0)
+                chevron.BackgroundTransparency = 1
+                chevron.Font = Library.Theme.fontBold
+                chevron.TextSize = 10
+                chevron.TextColor3 = Library.Theme.textMuted
+                chevron.Text = "v"
+                chevron.ZIndex = 5
+                chevron.Parent = comboBtn
+
+                local dropOverlay = nil
+                local dropBlocker = nil
+
+                local function destroyOverlay()
+                    if dropBlocker then dropBlocker:Destroy() dropBlocker = nil end
+                    if dropOverlay then dropOverlay:Destroy() dropOverlay = nil end
+                    Tween(chevron, { Rotation = 0 }, 0.15)
+                end
+
+                comboBtn.MouseButton1Click:Connect(function()
+                    if dropOverlay then
+                        Library:CloseDropdown()
+                        return
+                    end
+
+                    Library:CloseDropdown()
+                    Tween(chevron, { Rotation = 180 }, 0.15)
+
+                    dropBlocker = Instance.new("TextButton")
+                    dropBlocker.Name = "DropdownBackdrop"
+                    dropBlocker.Size = UDim2.new(1, 0, 1, 0)
+                    dropBlocker.BackgroundTransparency = 1
+                    dropBlocker.Text = ""
+                    dropBlocker.ZIndex = 198
+                    dropBlocker.Parent = ScreenGui
+
+                    dropBlocker.MouseButton1Click:Connect(function()
+                        Library:CloseDropdown()
+                    end)
+
+                    local maxVisible = math.min(#options, 6)
+                    local popupHeight = (maxVisible * 26) + 8
+                    local vpSize = Camera.ViewportSize or Vector2.new(1920, 1080)
+                    local btnPos = comboBtn.AbsolutePosition
+                    local btnSize = comboBtn.AbsoluteSize
+
+                    local posX = btnPos.X
+                    local posY = btnPos.Y + btnSize.Y + 4
+                    if posY + popupHeight > vpSize.Y - 10 then
+                        posY = math.max(10, btnPos.Y - popupHeight - 4)
+                    end
+
+                    dropOverlay = Instance.new("ScrollingFrame")
+                    dropOverlay.Name = "MultiDropdownPopup"
+                    dropOverlay.Size = UDim2.new(0, btnSize.X, 0, popupHeight)
+                    dropOverlay.Position = UDim2.new(0, posX, 0, posY)
+                    dropOverlay.BackgroundColor3 = Library.Theme.cardBg
+                    dropOverlay.BorderSizePixel = 0
+                    dropOverlay.ScrollBarThickness = (#options > 6) and 3 or 0
+                    dropOverlay.ScrollBarImageColor3 = Library.Theme.borderBright
+                    dropOverlay.CanvasSize = UDim2.new(0, 0, 0, #options * 26 + 6)
+                    dropOverlay.ZIndex = 200
+                    dropOverlay.Parent = ScreenGui
+
+                    local doc = Instance.new("UICorner")
+                    doc.CornerRadius = UDim.new(0, 6)
+                    doc.Parent = dropOverlay
+
+                    CreateStroke(dropOverlay, Library.Theme.borderBright, 1, 0)
+
+                    local dLayout = Instance.new("UIListLayout")
+                    dLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                    dLayout.Padding = UDim.new(0, 2)
+                    dLayout.Parent = dropOverlay
+
+                    local dPad = Instance.new("UIPadding")
+                    dPad.PaddingTop = UDim.new(0, 4)
+                    dPad.PaddingBottom = UDim.new(0, 4)
+                    dPad.PaddingLeft = UDim.new(0, 4)
+                    dPad.PaddingRight = UDim.new(0, 4)
+                    dPad.Parent = dropOverlay
+
+                    for i, opt in ipairs(options) do
+                        local isChecked = not not selected[opt]
+                        local optBtn = Instance.new("TextButton")
+                        optBtn.Size = UDim2.new(1, 0, 0, 24)
+                        optBtn.BackgroundColor3 = isChecked and Library.Theme.inputBg or Color3.fromRGB(0, 0, 0)
+                        optBtn.BackgroundTransparency = isChecked and 0 or 1
+                        optBtn.BorderSizePixel = 0
+                        optBtn.Font = Library.Theme.fontBold
+                        optBtn.TextSize = 11
+                        optBtn.TextColor3 = isChecked and Library.Theme.accent or Library.Theme.text
+                        optBtn.TextXAlignment = Enum.TextXAlignment.Left
+                        optBtn.Text = (isChecked and "  ✓  " or "      ") .. tostring(opt)
+                        optBtn.ZIndex = 201
+                        optBtn.Parent = dropOverlay
+
+                        local oc = Instance.new("UICorner")
+                        oc.CornerRadius = UDim.new(0, 4)
+                        oc.Parent = optBtn
+
+                        optBtn.MouseButton1Click:Connect(function()
+                            selected[opt] = not selected[opt]
+                            local nowChecked = selected[opt]
+                            optBtn.BackgroundColor3 = nowChecked and Library.Theme.inputBg or Color3.fromRGB(0, 0, 0)
+                            optBtn.BackgroundTransparency = nowChecked and 0 or 1
+                            optBtn.TextColor3 = nowChecked and Library.Theme.accent or Library.Theme.text
+                            optBtn.Text = (nowChecked and "  ✓  " or "      ") .. tostring(opt)
+                            comboBtn.Text = "   " .. formatDisplay()
+                            pcall(callback, getSelectedList(), selected)
+                        end)
+                    end
+
+                    Library.ActiveDropdownCloseFn = destroyOverlay
+                end)
+
+                return {
+                    Set = function(newSelection)
+                        selected = {}
+                        if typeof(newSelection) == "table" then
+                            for k, v in pairs(newSelection) do
+                                if typeof(k) == "number" and typeof(v) == "string" then selected[v] = true
+                                elseif typeof(k) == "string" and v == true then selected[k] = true end
+                            end
+                        elseif typeof(newSelection) == "string" then
+                            selected[newSelection] = true
+                        end
+                        comboBtn.Text = "   " .. formatDisplay()
+                        pcall(callback, getSelectedList(), selected)
+                    end,
+                    Refresh = function(newOptions, newDefault)
+                        options = newOptions or options
+                        selected = {}
+                        if newDefault then
+                            if typeof(newDefault) == "table" then
+                                for k, v in pairs(newDefault) do
+                                    if typeof(k) == "number" and typeof(v) == "string" then selected[v] = true
+                                    elseif typeof(k) == "string" and v == true then selected[k] = true end
+                                end
+                            elseif typeof(newDefault) == "string" then
+                                selected[newDefault] = true
+                            end
+                        end
+                        comboBtn.Text = "   " .. formatDisplay()
+                    end,
+                    Get = function() return getSelectedList(), selected end
+                }
+            end
+
             function CardObj:CreateKeybind(kConfig)
                 kConfig = kConfig or {}
                 local name = kConfig.Name or "Keybind"
@@ -1214,6 +1466,8 @@ function Library:CreateWindow(config)
                 if typeof(currentKey) == "string" and Enum.KeyCode[currentKey] then
                     currentKey = Enum.KeyCode[currentKey]
                 end
+                local currentMode = kConfig.Mode or "Toggle"
+                local activeState = (currentMode == "Always")
                 local callback = kConfig.Callback or function() end
 
                 local row = Instance.new("Frame")
@@ -1224,7 +1478,7 @@ function Library:CreateWindow(config)
                 row.Parent = card
 
                 local lbl = Instance.new("TextLabel")
-                lbl.Size = UDim2.new(1, -78, 1, 0)
+                lbl.Size = UDim2.new(1, -128, 1, 0)
                 lbl.BackgroundTransparency = 1
                 lbl.Font = Library.Theme.fontBold
                 lbl.TextSize = 11
@@ -1235,9 +1489,26 @@ function Library:CreateWindow(config)
                 lbl.ZIndex = 4
                 lbl.Parent = row
 
+                local modeBtn = Instance.new("TextButton")
+                modeBtn.Size = UDim2.new(0, 52, 0, 20)
+                modeBtn.Position = UDim2.new(1, -122, 0.5, -10)
+                modeBtn.BackgroundColor3 = Library.Theme.inputBg
+                modeBtn.BorderSizePixel = 0
+                modeBtn.Font = Library.Theme.fontBold
+                modeBtn.TextSize = 9
+                modeBtn.TextColor3 = Library.Theme.textMuted
+                modeBtn.Text = "[" .. currentMode .. "]"
+                modeBtn.ZIndex = 5
+                modeBtn.Parent = row
+
+                local mbc = Instance.new("UICorner")
+                mbc.CornerRadius = UDim.new(0, 4)
+                mbc.Parent = modeBtn
+                CreateStroke(modeBtn, Library.Theme.border, 1, 0)
+
                 local keyBtn = Instance.new("TextButton")
-                keyBtn.Size = UDim2.new(0, 70, 0, 20)
-                keyBtn.Position = UDim2.new(1, -70, 0.5, -10)
+                keyBtn.Size = UDim2.new(0, 64, 0, 20)
+                keyBtn.Position = UDim2.new(1, -64, 0.5, -10)
                 keyBtn.BackgroundColor3 = Library.Theme.inputBg
                 keyBtn.BorderSizePixel = 0
                 keyBtn.Font = Library.Theme.fontBold
@@ -1252,8 +1523,33 @@ function Library:CreateWindow(config)
                 kbc.Parent = keyBtn
                 local ks = CreateStroke(keyBtn, Library.Theme.border, 1, 0)
 
+                local modes = { "Toggle", "Hold", "Always" }
+                local function cycleMode()
+                    local nextIdx = 1
+                    for idx, m in ipairs(modes) do
+                        if m == currentMode then
+                            nextIdx = (idx % #modes) + 1
+                            break
+                        end
+                    end
+                    currentMode = modes[nextIdx]
+                    modeBtn.Text = "[" .. currentMode .. "]"
+                    if currentMode == "Always" then
+                        activeState = true
+                        keyBtn.Text = "[---]"
+                    else
+                        activeState = false
+                        keyBtn.Text = "[" .. (currentKey and currentKey.Name or "None") .. "]"
+                    end
+                    pcall(callback, currentKey, currentMode, activeState)
+                end
+
+                modeBtn.MouseButton1Click:Connect(cycleMode)
+                keyBtn.MouseButton2Click:Connect(cycleMode)
+
                 local listening = false
                 keyBtn.MouseButton1Click:Connect(function()
+                    if currentMode == "Always" then cycleMode() return end
                     if listening then return end
                     listening = true
                     keyBtn.Text = "[...]"
@@ -1272,18 +1568,55 @@ function Library:CreateWindow(config)
                             listening = false
                             Tween(ks, { Color = Library.Theme.border }, 0.12)
                             conn:Disconnect()
-                            pcall(callback, currentKey)
+                            pcall(callback, currentKey, currentMode, activeState)
                         end
                     end)
                 end)
 
+                UserInputService.InputBegan:Connect(function(input)
+                    if currentMode == "Always" then return end
+                    if input.UserInputType == Enum.UserInputType.Keyboard and currentKey and input.KeyCode == currentKey then
+                        if currentMode == "Toggle" then
+                            activeState = not activeState
+                            pcall(callback, currentKey, currentMode, activeState)
+                        elseif currentMode == "Hold" then
+                            activeState = true
+                            pcall(callback, currentKey, currentMode, activeState)
+                        end
+                    end
+                end)
+
+                UserInputService.InputEnded:Connect(function(input)
+                    if currentMode == "Hold" and currentKey and input.KeyCode == currentKey then
+                        activeState = false
+                        pcall(callback, currentKey, currentMode, activeState)
+                    end
+                end)
+
                 return {
-                    Set = function(k)
+                    Set = function(k, m)
                         if typeof(k) == "string" and Enum.KeyCode[k] then k = Enum.KeyCode[k] end
                         currentKey = k
-                        keyBtn.Text = "[" .. (currentKey and currentKey.Name or "None") .. "]"
+                        if m and table.find(modes, m) then
+                            currentMode = m
+                            modeBtn.Text = "[" .. currentMode .. "]"
+                        end
+                        if currentMode == "Always" then
+                            activeState = true
+                            keyBtn.Text = "[---]"
+                        else
+                            keyBtn.Text = "[" .. (currentKey and currentKey.Name or "None") .. "]"
+                        end
                     end,
-                    Get = function() return currentKey end
+                    SetMode = function(m)
+                        if table.find(modes, m) then
+                            currentMode = m
+                            modeBtn.Text = "[" .. currentMode .. "]"
+                            if currentMode == "Always" then activeState = true keyBtn.Text = "[---]"
+                            else keyBtn.Text = "[" .. (currentKey and currentKey.Name or "None") .. "]" end
+                        end
+                    end,
+                    Get = function() return currentKey, currentMode, activeState end
                 }
             end
 
@@ -1291,6 +1624,7 @@ function Library:CreateWindow(config)
                 cConfig = cConfig or {}
                 local name = cConfig.Name or "Color Picker"
                 local currentColor = ParseColor(cConfig.Default or Library.Theme.accent)
+                local currentAlpha = tonumber(cConfig.Alpha) or tonumber(cConfig.DefaultAlpha) or 1.0
                 local callback = cConfig.Callback or function() end
 
                 local h, s, v = Color3.toHSV(currentColor)
@@ -1362,7 +1696,7 @@ function Library:CreateWindow(config)
                     end)
 
                     local popupW = 200
-                    local popupH = 204
+                    local popupH = 224
                     local btnPos = cBtn.AbsolutePosition
                     local btnSize = cBtn.AbsoluteSize
                     local vpSize = Camera.ViewportSize or Vector2.new(1920, 1080)
@@ -1395,7 +1729,7 @@ function Library:CreateWindow(config)
                     dPad.Parent = dropOverlay
 
                     local svBox = Instance.new("ImageButton")
-                    svBox.Size = UDim2.new(1, 0, 0, 96)
+                    svBox.Size = UDim2.new(1, 0, 0, 92)
                     svBox.Position = UDim2.new(0, 0, 0, 0)
                     svBox.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
                     svBox.BorderSizePixel = 0
@@ -1424,8 +1758,8 @@ function Library:CreateWindow(config)
                     CreateStroke(svCursor, Color3.fromRGB(0, 0, 0), 1, 0)
 
                     local hueBar = Instance.new("ImageButton")
-                    hueBar.Size = UDim2.new(1, 0, 0, 12)
-                    hueBar.Position = UDim2.new(0, 0, 0, 102)
+                    hueBar.Size = UDim2.new(1, 0, 0, 11)
+                    hueBar.Position = UDim2.new(0, 0, 0, 98)
                     hueBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                     hueBar.BorderSizePixel = 0
                     hueBar.AutoButtonColor = false
@@ -1463,9 +1797,44 @@ function Library:CreateWindow(config)
                     hkc.Parent = hueKnob
                     CreateStroke(hueKnob, Color3.fromRGB(0, 0, 0), 1, 0)
 
+                    local alphaBar = Instance.new("ImageButton")
+                    alphaBar.Size = UDim2.new(1, 0, 0, 11)
+                    alphaBar.Position = UDim2.new(0, 0, 0, 114)
+                    alphaBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                    alphaBar.BorderSizePixel = 0
+                    alphaBar.AutoButtonColor = false
+                    alphaBar.ZIndex = 201
+                    alphaBar.Parent = dropOverlay
+
+                    local abc2 = Instance.new("UICorner")
+                    abc2.CornerRadius = UDim.new(0, 4)
+                    abc2.Parent = alphaBar
+                    CreateStroke(alphaBar, Library.Theme.border, 1, 0)
+
+                    local alphaGrad = Instance.new("UIGradient")
+                    alphaGrad.Color = ColorSequence.new({
+                        ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 15, 22)),
+                        ColorSequenceKeypoint.new(1, Color3.fromHSV(h, 1, 1))
+                    })
+                    alphaGrad.Parent = alphaBar
+
+                    local alphaKnob = Instance.new("Frame")
+                    alphaKnob.Size = UDim2.new(0, 4, 1, 4)
+                    alphaKnob.AnchorPoint = Vector2.new(0.5, 0.5)
+                    alphaKnob.Position = UDim2.new(currentAlpha, 0, 0.5, 0)
+                    alphaKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                    alphaKnob.BorderSizePixel = 0
+                    alphaKnob.ZIndex = 202
+                    alphaKnob.Parent = alphaBar
+
+                    local akc = Instance.new("UICorner")
+                    akc.CornerRadius = UDim.new(0, 2)
+                    akc.Parent = alphaKnob
+                    CreateStroke(alphaKnob, Color3.fromRGB(0, 0, 0), 1, 0)
+
                     local infoRow = Instance.new("Frame")
                     infoRow.Size = UDim2.new(1, 0, 0, 24)
-                    infoRow.Position = UDim2.new(0, 0, 0, 120)
+                    infoRow.Position = UDim2.new(0, 0, 0, 132)
                     infoRow.BackgroundTransparency = 1
                     infoRow.ZIndex = 201
                     infoRow.Parent = dropOverlay
@@ -1483,7 +1852,7 @@ function Library:CreateWindow(config)
                     CreateStroke(previewSwatch, Library.Theme.borderBright, 1, 0)
 
                     local hexBox = Instance.new("TextBox")
-                    hexBox.Size = UDim2.new(0, 74, 1, 0)
+                    hexBox.Size = UDim2.new(0, 68, 1, 0)
                     hexBox.Position = UDim2.new(0, 30, 0, 0)
                     hexBox.BackgroundColor3 = Library.Theme.inputBg
                     hexBox.BorderSizePixel = 0
@@ -1500,8 +1869,8 @@ function Library:CreateWindow(config)
                     local hexStroke = CreateStroke(hexBox, Library.Theme.border, 1, 0)
 
                     local rgbLabel = Instance.new("TextLabel")
-                    rgbLabel.Size = UDim2.new(1, -110, 1, 0)
-                    rgbLabel.Position = UDim2.new(0, 110, 0, 0)
+                    rgbLabel.Size = UDim2.new(1, -102, 1, 0)
+                    rgbLabel.Position = UDim2.new(0, 102, 0, 0)
                     rgbLabel.BackgroundTransparency = 1
                     rgbLabel.Font = Library.Theme.font
                     rgbLabel.TextSize = 9
@@ -1512,7 +1881,7 @@ function Library:CreateWindow(config)
 
                     local presetContainer = Instance.new("Frame")
                     presetContainer.Size = UDim2.new(1, 0, 0, 18)
-                    presetContainer.Position = UDim2.new(0, 0, 0, 150)
+                    presetContainer.Position = UDim2.new(0, 0, 0, 162)
                     presetContainer.BackgroundTransparency = 1
                     presetContainer.ZIndex = 201
                     presetContainer.Parent = dropOverlay
@@ -1543,13 +1912,18 @@ function Library:CreateWindow(config)
                         svBox.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
                         svCursor.Position = UDim2.new(s, 0, 1 - v, 0)
                         hueKnob.Position = UDim2.new(h, 0, 0.5, 0)
+                        alphaKnob.Position = UDim2.new(currentAlpha, 0, 0.5, 0)
+                        alphaGrad.Color = ColorSequence.new({
+                            ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 15, 22)),
+                            ColorSequenceKeypoint.new(1, Color3.fromHSV(h, 1, 1))
+                        })
                         cBtn.BackgroundColor3 = currentColor
                         previewSwatch.BackgroundColor3 = currentColor
                         hexBox.Text = string.format("#%02X%02X%02X", r, g, b)
-                        rgbLabel.Text = string.format("%d, %d, %d", r, g, b)
+                        rgbLabel.Text = string.format("%d, %d, %d (%d%%)", r, g, b, math.floor(currentAlpha * 100 + 0.5))
 
                         if not skipCallback then
-                            pcall(callback, currentColor)
+                            pcall(callback, currentColor, currentAlpha)
                         end
                     end
 
@@ -1576,6 +1950,7 @@ function Library:CreateWindow(config)
 
                     local isDraggingSV = false
                     local isDraggingHue = false
+                    local isDraggingAlpha = false
 
                     local function updateSVFromInput(input)
                         local boxW = svBox.AbsoluteSize.X
@@ -1594,6 +1969,13 @@ function Library:CreateWindow(config)
                         updateColor()
                     end
 
+                    local function updateAlphaFromInput(input)
+                        local barW = alphaBar.AbsoluteSize.X
+                        local relX = (barW > 0) and math.clamp((input.Position.X - alphaBar.AbsolutePosition.X) / barW, 0, 1) or 0
+                        currentAlpha = relX
+                        updateColor()
+                    end
+
                     svBox.InputBegan:Connect(function(input)
                         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                             isDraggingSV = true
@@ -1608,12 +1990,21 @@ function Library:CreateWindow(config)
                         end
                     end)
 
+                    alphaBar.InputBegan:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                            isDraggingAlpha = true
+                            updateAlphaFromInput(input)
+                        end
+                    end)
+
                     moveConn = UserInputService.InputChanged:Connect(function(input)
                         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
                             if isDraggingSV then
                                 updateSVFromInput(input)
                             elseif isDraggingHue then
                                 updateHueFromInput(input)
+                            elseif isDraggingAlpha then
+                                updateAlphaFromInput(input)
                             end
                         end
                     end)
@@ -1622,6 +2013,7 @@ function Library:CreateWindow(config)
                         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                             isDraggingSV = false
                             isDraggingHue = false
+                            isDraggingAlpha = false
                         end
                     end)
 
@@ -1647,17 +2039,22 @@ function Library:CreateWindow(config)
                 cBtn.MouseButton1Click:Connect(openPicker)
 
                 return {
-                    Set = function(c)
+                    Set = function(c, a)
                         currentColor = ParseColor(c)
+                        if a ~= nil then currentAlpha = math.clamp(tonumber(a) or 1, 0, 1) end
                         h, s, v = Color3.toHSV(currentColor)
                         cBtn.BackgroundColor3 = currentColor
                         if dropOverlay then
                             openPicker()
                         else
-                            pcall(callback, currentColor)
+                            pcall(callback, currentColor, currentAlpha)
                         end
                     end,
-                    Get = function() return currentColor end
+                    SetAlpha = function(a)
+                        currentAlpha = math.clamp(tonumber(a) or 1, 0, 1)
+                        pcall(callback, currentColor, currentAlpha)
+                    end,
+                    Get = function() return currentColor, currentAlpha end
                 }
             end
 
