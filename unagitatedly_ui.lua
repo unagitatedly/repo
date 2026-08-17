@@ -289,10 +289,7 @@ function Library:CreateWindow(config)
     UserInputService.InputChanged:Connect(function(input)
         if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
-            local vp = Camera.ViewportSize or Vector2.new(1920, 1080)
-            local targetX = math.clamp(startPos.X.Offset + delta.X, -Size.X.Offset * 0.5 + 20, vp.X - Size.X.Offset * 0.5 - 20)
-            local targetY = math.clamp(startPos.Y.Offset + delta.Y, -Size.Y.Offset * 0.5 + 20, vp.Y - Size.Y.Offset * 0.5 - 20)
-            MainFrame.Position = UDim2.new(startPos.X.Scale, targetX, startPos.Y.Scale, targetY)
+            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
 
