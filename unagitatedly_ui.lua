@@ -134,8 +134,8 @@ function Library:Notify(nConfig)
     local card = Instance.new("Frame")
     card.Size = UDim2.new(1, 0, 1, 0)
     card.BackgroundColor3 = Library.Theme.cardBg
-    card.BackgroundTransparency = 0.05
-    card.Position = UDim2.new(1, 60, 0, 0)
+    card.BackgroundTransparency = 1
+    card.Position = UDim2.new(0, 100, 0, 0)
     card.BorderSizePixel = 0
     card.ZIndex = 502
     card.Parent = wrapper
@@ -144,12 +144,13 @@ function Library:Notify(nConfig)
     cc.CornerRadius = UDim.new(0, 8)
     cc.Parent = card
 
-    local stroke = CreateStroke(card, Library.Theme.borderBright, 1, 0)
+    local stroke = CreateStroke(card, Library.Theme.borderBright, 1, 1)
 
     local accentBar = Instance.new("Frame")
     accentBar.Size = UDim2.new(0, 3, 1, -14)
     accentBar.Position = UDim2.new(0, 6, 0, 7)
     accentBar.BackgroundColor3 = Library.Theme.accent
+    accentBar.BackgroundTransparency = 1
     accentBar.BorderSizePixel = 0
     accentBar.ZIndex = 503
     accentBar.Parent = card
@@ -162,6 +163,7 @@ function Library:Notify(nConfig)
     tLbl.Size = UDim2.new(1, -24, 0, 16)
     tLbl.Position = UDim2.new(0, 16, 0, 8)
     tLbl.BackgroundTransparency = 1
+    tLbl.TextTransparency = 1
     tLbl.Font = Library.Theme.fontBold
     tLbl.TextSize = 12
     tLbl.TextColor3 = Library.Theme.accent
@@ -174,6 +176,7 @@ function Library:Notify(nConfig)
     cLbl.Size = UDim2.new(1, -24, 0, 24)
     cLbl.Position = UDim2.new(0, 16, 0, 24)
     cLbl.BackgroundTransparency = 1
+    cLbl.TextTransparency = 1
     cLbl.Font = Library.Theme.font
     cLbl.TextSize = 11
     cLbl.TextColor3 = Library.Theme.text
@@ -183,11 +186,15 @@ function Library:Notify(nConfig)
     cLbl.ZIndex = 503
     cLbl.Parent = card
 
-    Tween(card, { Position = UDim2.new(0, 0, 0, 0) }, 0.28, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    Tween(card, { Position = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 0.05 }, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+    Tween(stroke, { Transparency = 0 }, 0.25)
+    Tween(tLbl, { TextTransparency = 0 }, 0.25)
+    Tween(cLbl, { TextTransparency = 0 }, 0.25)
+    Tween(accentBar, { BackgroundTransparency = 0 }, 0.25)
 
     task.delay(duration, function()
         if card and card.Parent and wrapper and wrapper.Parent then
-            local tw = Tween(card, { Position = UDim2.new(1, 60, 0, 0), BackgroundTransparency = 1 }, 0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+            local tw = Tween(card, { Position = UDim2.new(0, 120, 0, 0), BackgroundTransparency = 1 }, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
             Tween(stroke, { Transparency = 1 }, 0.2)
             Tween(tLbl, { TextTransparency = 1 }, 0.2)
             Tween(cLbl, { TextTransparency = 1 }, 0.2)
