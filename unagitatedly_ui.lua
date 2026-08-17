@@ -4,6 +4,7 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local HttpService = game:GetService("HttpService")
+local TextService = game:GetService("TextService")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
@@ -272,8 +273,9 @@ function Library:CreateWindow(config)
     end)
 
     local BrandContainer = Instance.new("Frame")
-    BrandContainer.Size = UDim2.new(0.7, 0, 1, 0)
+    BrandContainer.Size = UDim2.new(1, -70, 1, 0)
     BrandContainer.BackgroundTransparency = 1
+    BrandContainer.ClipsDescendants = false
     BrandContainer.ZIndex = 3
     BrandContainer.Parent = HeaderBar
 
@@ -285,44 +287,70 @@ function Library:CreateWindow(config)
     BrandLayout.Parent = BrandContainer
 
     local TitleLabel = Instance.new("TextLabel")
-    TitleLabel.AutomaticSize = Enum.AutomaticSize.X
     TitleLabel.Size = UDim2.new(0, 0, 1, 0)
     TitleLabel.BackgroundTransparency = 1
     TitleLabel.Font = Library.Theme.fontBold
     TitleLabel.TextSize = 13
     TitleLabel.TextColor3 = Library.Theme.accent
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
     TitleLabel.Text = Title
     TitleLabel.LayoutOrder = 1
     TitleLabel.ZIndex = 3
     TitleLabel.Parent = BrandContainer
 
     local SubTitleLabel = Instance.new("TextLabel")
-    SubTitleLabel.AutomaticSize = Enum.AutomaticSize.X
     SubTitleLabel.Size = UDim2.new(0, 0, 1, 0)
     SubTitleLabel.BackgroundTransparency = 1
     SubTitleLabel.Font = Library.Theme.font
     SubTitleLabel.TextSize = 13
     SubTitleLabel.TextColor3 = Library.Theme.text
+    SubTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
     SubTitleLabel.Text = SubTitle
     SubTitleLabel.LayoutOrder = 2
     SubTitleLabel.ZIndex = 3
     SubTitleLabel.Parent = BrandContainer
 
     local StandardBadge = Instance.new("TextLabel")
-    StandardBadge.Size = UDim2.new(0, 62, 0, 19)
+    StandardBadge.Size = UDim2.new(0, 0, 0, 19)
     StandardBadge.BackgroundColor3 = Color3.fromRGB(34, 18, 28)
     StandardBadge.Font = Library.Theme.fontBold
     StandardBadge.TextSize = 10
     StandardBadge.TextColor3 = Color3.fromRGB(244, 140, 185)
+    StandardBadge.TextXAlignment = Enum.TextXAlignment.Center
     StandardBadge.Text = BadgeText
     StandardBadge.LayoutOrder = 3
     StandardBadge.ZIndex = 3
     StandardBadge.Parent = BrandContainer
 
+    local sbPad = Instance.new("UIPadding")
+    sbPad.PaddingLeft = UDim.new(0, 8)
+    sbPad.PaddingRight = UDim.new(0, 8)
+    sbPad.Parent = StandardBadge
+
     local sbc = Instance.new("UICorner")
     sbc.CornerRadius = UDim.new(0, 10)
     sbc.Parent = StandardBadge
     local badgeStroke = CreateStroke(StandardBadge, Color3.fromRGB(56, 28, 44), 1, 0)
+
+    local function updateHeaderLayout()
+        local tText = tostring(TitleLabel.Text or "")
+        local sText = tostring(SubTitleLabel.Text or "")
+        local bText = tostring(StandardBadge.Text or "")
+
+        TitleLabel.Visible = (#tText > 0)
+        SubTitleLabel.Visible = (#sText > 0)
+        StandardBadge.Visible = (#bText > 0)
+
+        local tSize = TextService:GetTextSize(tText, TitleLabel.TextSize, TitleLabel.Font, Vector2.new(1000, 36))
+        TitleLabel.Size = UDim2.new(0, math.ceil(tSize.X) + 2, 1, 0)
+
+        local sSize = TextService:GetTextSize(sText, SubTitleLabel.TextSize, SubTitleLabel.Font, Vector2.new(1000, 36))
+        SubTitleLabel.Size = UDim2.new(0, math.ceil(sSize.X) + 2, 1, 0)
+
+        local bSize = TextService:GetTextSize(bText, StandardBadge.TextSize, StandardBadge.Font, Vector2.new(1000, 36))
+        StandardBadge.Size = UDim2.new(0, math.max(20, math.ceil(bSize.X) + 16), 0, 19)
+    end
+    updateHeaderLayout()
 
     local VersionLabel = Instance.new("TextLabel")
     VersionLabel.Size = UDim2.new(0.3, 0, 1, 0)
@@ -415,16 +443,19 @@ function Library:CreateWindow(config)
 
     function WindowObj:SetTitle(newTitle)
         TitleLabel.Text = tostring(newTitle or "")
+        updateHeaderLayout()
     end
 
     function WindowObj:SetSubTitle(newSubTitle)
         SubTitleLabel.Text = tostring(newSubTitle or "")
+        updateHeaderLayout()
     end
 
     function WindowObj:SetBadge(text, bgCol, txtCol)
         StandardBadge.Text = tostring(text or "")
         if bgCol then StandardBadge.BackgroundColor3 = ParseColor(bgCol) end
         if txtCol then StandardBadge.TextColor3 = ParseColor(txtCol) end
+        updateHeaderLayout()
     end
 
     function WindowObj:SetVersion(ver)
@@ -1126,6 +1157,8 @@ function Library:CreateWindow(config)
                 local currentColor = ParseColor(cConfig.Default or Library.Theme.accent)
                 local callback = cConfig.Callback or function() end
 
+                local h, s, v = Color3.toHSV(currentColor)
+
                 local row = Instance.new("Frame")
                 row.Size = UDim2.new(1, 0, 0, 24)
                 row.BackgroundTransparency = 1
@@ -1134,7 +1167,7 @@ function Library:CreateWindow(config)
                 row.Parent = card
 
                 local lbl = Instance.new("TextLabel")
-                lbl.Size = UDim2.new(0.75, 0, 1, 0)
+                lbl.Size = UDim2.new(1, -44, 1, 0)
                 lbl.BackgroundTransparency = 1
                 lbl.Font = Library.Theme.fontBold
                 lbl.TextSize = 11
@@ -1145,8 +1178,8 @@ function Library:CreateWindow(config)
                 lbl.Parent = row
 
                 local cBtn = Instance.new("TextButton")
-                cBtn.Size = UDim2.new(0, 32, 0, 18)
-                cBtn.Position = UDim2.new(1, -32, 0.5, -9)
+                cBtn.Size = UDim2.new(0, 34, 0, 18)
+                cBtn.Position = UDim2.new(1, -34, 0.5, -9)
                 cBtn.BackgroundColor3 = currentColor
                 cBtn.BorderSizePixel = 0
                 cBtn.Text = ""
@@ -1156,31 +1189,337 @@ function Library:CreateWindow(config)
                 local cbc = Instance.new("UICorner")
                 cbc.CornerRadius = UDim.new(0, 4)
                 cbc.Parent = cBtn
-                CreateStroke(cBtn, Library.Theme.borderBright, 1, 0)
+                local cStroke = CreateStroke(cBtn, Library.Theme.borderBright, 1, 0)
 
-                local presets = {
-                    Color3.fromRGB(244, 166, 205),
-                    Color3.fromRGB(96, 165, 250),
-                    Color3.fromRGB(52, 211, 153),
-                    Color3.fromRGB(251, 191, 36),
-                    Color3.fromRGB(248, 113, 113),
-                    Color3.fromRGB(192, 132, 252),
-                    Color3.fromRGB(255, 255, 255),
-                }
-                local pIdx = 1
+                local dropOverlay = nil
+                local dropBlocker = nil
+                local moveConn = nil
+                local endConn = nil
 
-                cBtn.MouseButton1Click:Connect(function()
-                    pIdx = (pIdx % #presets) + 1
-                    currentColor = presets[pIdx]
-                    Tween(cBtn, { BackgroundColor3 = currentColor }, 0.15)
-                    pcall(callback, currentColor)
-                end)
+                local function closePicker()
+                    if moveConn then moveConn:Disconnect() moveConn = nil end
+                    if endConn then endConn:Disconnect() endConn = nil end
+                    if dropBlocker then dropBlocker:Destroy() dropBlocker = nil end
+                    if dropOverlay then dropOverlay:Destroy() dropOverlay = nil end
+                    Tween(cStroke, { Color = Library.Theme.borderBright }, 0.12)
+                end
+
+                local function openPicker()
+                    if dropOverlay then
+                        Library:CloseDropdown()
+                        return
+                    end
+
+                    Library:CloseDropdown()
+                    Tween(cStroke, { Color = Library.Theme.accent }, 0.12)
+
+                    dropBlocker = Instance.new("TextButton")
+                    dropBlocker.Name = "ColorPickerBackdrop"
+                    dropBlocker.Size = UDim2.new(1, 0, 1, 0)
+                    dropBlocker.BackgroundTransparency = 1
+                    dropBlocker.Text = ""
+                    dropBlocker.ZIndex = 198
+                    dropBlocker.Parent = ScreenGui
+
+                    dropBlocker.MouseButton1Click:Connect(function()
+                        Library:CloseDropdown()
+                    end)
+
+                    local popupW = 200
+                    local popupH = 204
+                    local btnPos = cBtn.AbsolutePosition
+                    local btnSize = cBtn.AbsoluteSize
+                    local vpSize = Camera.ViewportSize or Vector2.new(1920, 1080)
+
+                    local posX = math.clamp(btnPos.X + btnSize.X - popupW, 10, math.max(10, vpSize.X - popupW - 10))
+                    local posY = btnPos.Y + btnSize.Y + 4
+                    if posY + popupH > vpSize.Y - 10 then
+                        posY = math.max(10, btnPos.Y - popupH - 4)
+                    end
+
+                    dropOverlay = Instance.new("Frame")
+                    dropOverlay.Name = "ColorPickerPopup"
+                    dropOverlay.Size = UDim2.new(0, popupW, 0, popupH)
+                    dropOverlay.Position = UDim2.new(0, posX, 0, posY)
+                    dropOverlay.BackgroundColor3 = Library.Theme.cardBg
+                    dropOverlay.BorderSizePixel = 0
+                    dropOverlay.ZIndex = 200
+                    dropOverlay.Parent = ScreenGui
+
+                    local doc = Instance.new("UICorner")
+                    doc.CornerRadius = UDim.new(0, 8)
+                    doc.Parent = dropOverlay
+                    CreateStroke(dropOverlay, Library.Theme.borderBright, 1, 0)
+
+                    local dPad = Instance.new("UIPadding")
+                    dPad.PaddingTop = UDim.new(0, 8)
+                    dPad.PaddingBottom = UDim.new(0, 8)
+                    dPad.PaddingLeft = UDim.new(0, 8)
+                    dPad.PaddingRight = UDim.new(0, 8)
+                    dPad.Parent = dropOverlay
+
+                    local svBox = Instance.new("ImageButton")
+                    svBox.Size = UDim2.new(1, 0, 0, 96)
+                    svBox.Position = UDim2.new(0, 0, 0, 0)
+                    svBox.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
+                    svBox.BorderSizePixel = 0
+                    svBox.AutoButtonColor = false
+                    svBox.Image = "rbxassetid://4155801252"
+                    svBox.ZIndex = 201
+                    svBox.Parent = dropOverlay
+
+                    local svc = Instance.new("UICorner")
+                    svc.CornerRadius = UDim.new(0, 4)
+                    svc.Parent = svBox
+                    CreateStroke(svBox, Library.Theme.border, 1, 0)
+
+                    local svCursor = Instance.new("Frame")
+                    svCursor.Size = UDim2.new(0, 10, 0, 10)
+                    svCursor.AnchorPoint = Vector2.new(0.5, 0.5)
+                    svCursor.Position = UDim2.new(s, 0, 1 - v, 0)
+                    svCursor.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                    svCursor.BorderSizePixel = 0
+                    svCursor.ZIndex = 202
+                    svCursor.Parent = svBox
+
+                    local svcc = Instance.new("UICorner")
+                    svcc.CornerRadius = UDim.new(1, 0)
+                    svcc.Parent = svCursor
+                    CreateStroke(svCursor, Color3.fromRGB(0, 0, 0), 1, 0)
+
+                    local hueBar = Instance.new("ImageButton")
+                    hueBar.Size = UDim2.new(1, 0, 0, 12)
+                    hueBar.Position = UDim2.new(0, 0, 0, 102)
+                    hueBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                    hueBar.BorderSizePixel = 0
+                    hueBar.AutoButtonColor = false
+                    hueBar.ZIndex = 201
+                    hueBar.Parent = dropOverlay
+
+                    local hbc = Instance.new("UICorner")
+                    hbc.CornerRadius = UDim.new(0, 4)
+                    hbc.Parent = hueBar
+                    CreateStroke(hueBar, Library.Theme.border, 1, 0)
+
+                    local hueGrad = Instance.new("UIGradient")
+                    hueGrad.Color = ColorSequence.new({
+                        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+                        ColorSequenceKeypoint.new(0.167, Color3.fromRGB(255, 255, 0)),
+                        ColorSequenceKeypoint.new(0.333, Color3.fromRGB(0, 255, 0)),
+                        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
+                        ColorSequenceKeypoint.new(0.667, Color3.fromRGB(0, 0, 255)),
+                        ColorSequenceKeypoint.new(0.833, Color3.fromRGB(255, 0, 255)),
+                        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
+                    })
+                    hueGrad.Parent = hueBar
+
+                    local hueKnob = Instance.new("Frame")
+                    hueKnob.Size = UDim2.new(0, 4, 1, 4)
+                    hueKnob.AnchorPoint = Vector2.new(0.5, 0.5)
+                    hueKnob.Position = UDim2.new(h, 0, 0.5, 0)
+                    hueKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                    hueKnob.BorderSizePixel = 0
+                    hueKnob.ZIndex = 202
+                    hueKnob.Parent = hueBar
+
+                    local hkc = Instance.new("UICorner")
+                    hkc.CornerRadius = UDim.new(0, 2)
+                    hkc.Parent = hueKnob
+                    CreateStroke(hueKnob, Color3.fromRGB(0, 0, 0), 1, 0)
+
+                    local infoRow = Instance.new("Frame")
+                    infoRow.Size = UDim2.new(1, 0, 0, 24)
+                    infoRow.Position = UDim2.new(0, 0, 0, 120)
+                    infoRow.BackgroundTransparency = 1
+                    infoRow.ZIndex = 201
+                    infoRow.Parent = dropOverlay
+
+                    local previewSwatch = Instance.new("Frame")
+                    previewSwatch.Size = UDim2.new(0, 24, 0, 24)
+                    previewSwatch.BackgroundColor3 = currentColor
+                    previewSwatch.BorderSizePixel = 0
+                    previewSwatch.ZIndex = 202
+                    previewSwatch.Parent = infoRow
+
+                    local psc = Instance.new("UICorner")
+                    psc.CornerRadius = UDim.new(0, 4)
+                    psc.Parent = previewSwatch
+                    CreateStroke(previewSwatch, Library.Theme.borderBright, 1, 0)
+
+                    local hexBox = Instance.new("TextBox")
+                    hexBox.Size = UDim2.new(0, 74, 1, 0)
+                    hexBox.Position = UDim2.new(0, 30, 0, 0)
+                    hexBox.BackgroundColor3 = Library.Theme.inputBg
+                    hexBox.BorderSizePixel = 0
+                    hexBox.Font = Library.Theme.fontBold
+                    hexBox.TextSize = 10
+                    hexBox.TextColor3 = Library.Theme.text
+                    hexBox.ClearTextOnFocus = false
+                    hexBox.ZIndex = 202
+                    hexBox.Parent = infoRow
+
+                    local hbc2 = Instance.new("UICorner")
+                    hbc2.CornerRadius = UDim.new(0, 4)
+                    hbc2.Parent = hexBox
+                    local hexStroke = CreateStroke(hexBox, Library.Theme.border, 1, 0)
+
+                    local rgbLabel = Instance.new("TextLabel")
+                    rgbLabel.Size = UDim2.new(1, -110, 1, 0)
+                    rgbLabel.Position = UDim2.new(0, 110, 0, 0)
+                    rgbLabel.BackgroundTransparency = 1
+                    rgbLabel.Font = Library.Theme.font
+                    rgbLabel.TextSize = 9
+                    rgbLabel.TextColor3 = Library.Theme.textMuted
+                    rgbLabel.TextXAlignment = Enum.TextXAlignment.Right
+                    rgbLabel.ZIndex = 202
+                    rgbLabel.Parent = infoRow
+
+                    local presetContainer = Instance.new("Frame")
+                    presetContainer.Size = UDim2.new(1, 0, 0, 18)
+                    presetContainer.Position = UDim2.new(0, 0, 0, 150)
+                    presetContainer.BackgroundTransparency = 1
+                    presetContainer.ZIndex = 201
+                    presetContainer.Parent = dropOverlay
+
+                    local prLayout = Instance.new("UIListLayout")
+                    prLayout.FillDirection = Enum.FillDirection.Horizontal
+                    prLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+                    prLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                    prLayout.Padding = UDim.new(0, 4)
+                    prLayout.Parent = presetContainer
+
+                    local presets = {
+                        Color3.fromRGB(244, 166, 205),
+                        Color3.fromRGB(96, 165, 250),
+                        Color3.fromRGB(52, 211, 153),
+                        Color3.fromRGB(251, 191, 36),
+                        Color3.fromRGB(248, 113, 113),
+                        Color3.fromRGB(192, 132, 252),
+                        Color3.fromRGB(255, 255, 255),
+                    }
+
+                    local function updateColor(skipCallback)
+                        currentColor = Color3.fromHSV(h, s, v)
+                        local r = math.clamp(math.floor(currentColor.R * 255 + 0.5), 0, 255)
+                        local g = math.clamp(math.floor(currentColor.G * 255 + 0.5), 0, 255)
+                        local b = math.clamp(math.floor(currentColor.B * 255 + 0.5), 0, 255)
+
+                        svBox.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
+                        svCursor.Position = UDim2.new(s, 0, 1 - v, 0)
+                        hueKnob.Position = UDim2.new(h, 0, 0.5, 0)
+                        cBtn.BackgroundColor3 = currentColor
+                        previewSwatch.BackgroundColor3 = currentColor
+                        hexBox.Text = string.format("#%02X%02X%02X", r, g, b)
+                        rgbLabel.Text = string.format("%d, %d, %d", r, g, b)
+
+                        if not skipCallback then
+                            pcall(callback, currentColor)
+                        end
+                    end
+
+                    for idx, pCol in ipairs(presets) do
+                        local pBtn = Instance.new("TextButton")
+                        pBtn.Size = UDim2.new(0, 22, 0, 16)
+                        pBtn.BackgroundColor3 = pCol
+                        pBtn.BorderSizePixel = 0
+                        pBtn.Text = ""
+                        pBtn.LayoutOrder = idx
+                        pBtn.ZIndex = 202
+                        pBtn.Parent = presetContainer
+
+                        local pCorner = Instance.new("UICorner")
+                        pCorner.CornerRadius = UDim.new(0, 3)
+                        pCorner.Parent = pBtn
+                        CreateStroke(pBtn, Library.Theme.border, 1, 0)
+
+                        pBtn.MouseButton1Click:Connect(function()
+                            h, s, v = Color3.toHSV(pCol)
+                            updateColor()
+                        end)
+                    end
+
+                    local isDraggingSV = false
+                    local isDraggingHue = false
+
+                    local function updateSVFromInput(input)
+                        local boxW = svBox.AbsoluteSize.X
+                        local boxH = svBox.AbsoluteSize.Y
+                        local relX = (boxW > 0) and math.clamp((input.Position.X - svBox.AbsolutePosition.X) / boxW, 0, 1) or 0
+                        local relY = (boxH > 0) and math.clamp((input.Position.Y - svBox.AbsolutePosition.Y) / boxH, 0, 1) or 0
+                        s = relX
+                        v = 1 - relY
+                        updateColor()
+                    end
+
+                    local function updateHueFromInput(input)
+                        local barW = hueBar.AbsoluteSize.X
+                        local relX = (barW > 0) and math.clamp((input.Position.X - hueBar.AbsolutePosition.X) / barW, 0, 1) or 0
+                        h = relX
+                        updateColor()
+                    end
+
+                    svBox.InputBegan:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                            isDraggingSV = true
+                            updateSVFromInput(input)
+                        end
+                    end)
+
+                    hueBar.InputBegan:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                            isDraggingHue = true
+                            updateHueFromInput(input)
+                        end
+                    end)
+
+                    moveConn = UserInputService.InputChanged:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                            if isDraggingSV then
+                                updateSVFromInput(input)
+                            elseif isDraggingHue then
+                                updateHueFromInput(input)
+                            end
+                        end
+                    end)
+
+                    endConn = UserInputService.InputEnded:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                            isDraggingSV = false
+                            isDraggingHue = false
+                        end
+                    end)
+
+                    hexBox.Focused:Connect(function()
+                        Tween(hexStroke, { Color = Library.Theme.accent }, 0.12)
+                    end)
+
+                    hexBox.FocusLost:Connect(function()
+                        Tween(hexStroke, { Color = Library.Theme.border }, 0.12)
+                        local col = ParseColor(hexBox.Text)
+                        if col then
+                            h, s, v = Color3.toHSV(col)
+                            updateColor()
+                        else
+                            updateColor(true)
+                        end
+                    end)
+
+                    updateColor(true)
+                    Library.ActiveDropdownCloseFn = closePicker
+                end
+
+                cBtn.MouseButton1Click:Connect(openPicker)
 
                 return {
                     Set = function(c)
                         currentColor = ParseColor(c)
+                        h, s, v = Color3.toHSV(currentColor)
                         cBtn.BackgroundColor3 = currentColor
-                        pcall(callback, currentColor)
+                        if dropOverlay then
+                            openPicker()
+                        else
+                            pcall(callback, currentColor)
+                        end
                     end,
                     Get = function() return currentColor end
                 }
