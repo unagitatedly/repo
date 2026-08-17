@@ -11,6 +11,7 @@ local Camera = workspace.CurrentCamera
 
 local Library = {
     ActiveDropdownCloseFn = nil,
+    NotificationPosition = "Bottom Right",
     Windows = {},
     Flags = {},
     ScreenGui = nil,
@@ -122,6 +123,31 @@ function Library:Destroy()
     end
 end
 
+local function UpdateNotificationContainer()
+    if not Library.NotificationContainer or not Library.NotificationContainer.Parent then return end
+    local pos = tostring(Library.NotificationPosition or "Bottom Right"):lower():gsub("%s+", ""):gsub("_", ""):gsub("%-", "")
+
+    local layout = Library.NotificationContainer:FindFirstChildOfClass("UIListLayout")
+    if pos == "topright" then
+        Library.NotificationContainer.Position = UDim2.new(1, -290, 0, 45)
+        if layout then layout.VerticalAlignment = Enum.VerticalAlignment.Top end
+    elseif pos == "topleft" then
+        Library.NotificationContainer.Position = UDim2.new(0, 20, 0, 45)
+        if layout then layout.VerticalAlignment = Enum.VerticalAlignment.Top end
+    elseif pos == "bottomleft" then
+        Library.NotificationContainer.Position = UDim2.new(0, 20, 1, -40)
+        if layout then layout.VerticalAlignment = Enum.VerticalAlignment.Bottom end
+    else
+        Library.NotificationContainer.Position = UDim2.new(1, -290, 1, -40)
+        if layout then layout.VerticalAlignment = Enum.VerticalAlignment.Bottom end
+    end
+end
+
+function Library:SetNotificationPosition(pos)
+    Library.NotificationPosition = pos or "Bottom Right"
+    UpdateNotificationContainer()
+end
+
 function Library:Notify(nConfig)
     nConfig = nConfig or {}
     local title = nConfig.Title or "unagitatedly"
@@ -142,20 +168,24 @@ function Library:Notify(nConfig)
     if not Library.NotificationContainer or not Library.NotificationContainer.Parent then
         local notifBox = Instance.new("Frame")
         notifBox.Name = "Notifications"
-        notifBox.Size = UDim2.new(0, 280, 1, -40)
-        notifBox.Position = UDim2.new(1, -290, 0, 20)
+        notifBox.Size = UDim2.new(0, 280, 1, -60)
         notifBox.BackgroundTransparency = 1
         notifBox.ZIndex = 500
         notifBox.Parent = parentGui
 
         local layout = Instance.new("UIListLayout")
         layout.SortOrder = Enum.SortOrder.LayoutOrder
-        layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
         layout.Padding = UDim.new(0, 8)
         layout.Parent = notifBox
 
         Library.NotificationContainer = notifBox
+        UpdateNotificationContainer()
     end
+
+    local pos = tostring(Library.NotificationPosition or "Bottom Right"):lower():gsub("%s+", ""):gsub("_", ""):gsub("%-", "")
+    local isLeft = pos:find("left") ~= nil
+    local startOffset = isLeft and -100 or 100
+    local exitOffset = isLeft and -120 or 120
 
     local wrapper = Instance.new("Frame")
     wrapper.Size = UDim2.new(1, 0, 0, 58)
@@ -168,7 +198,7 @@ function Library:Notify(nConfig)
     card.Size = UDim2.new(1, 0, 1, 0)
     card.BackgroundColor3 = Library.Theme.cardBg
     card.BackgroundTransparency = 1
-    card.Position = UDim2.new(0, 100, 0, 0)
+    card.Position = UDim2.new(0, startOffset, 0, 0)
     card.BorderSizePixel = 0
     card.ZIndex = 502
     card.Parent = wrapper
@@ -227,7 +257,7 @@ function Library:Notify(nConfig)
 
     task.delay(duration, function()
         if card and card.Parent and wrapper and wrapper.Parent then
-            local tw = Tween(card, { Position = UDim2.new(0, 120, 0, 0), BackgroundTransparency = 1 }, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+            local tw = Tween(card, { Position = UDim2.new(0, exitOffset, 0, 0), BackgroundTransparency = 1 }, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
             Tween(stroke, { Transparency = 1 }, 0.2)
             Tween(tLbl, { TextTransparency = 1 }, 0.2)
             Tween(cLbl, { TextTransparency = 1 }, 0.2)
@@ -522,6 +552,10 @@ function Library:CreateWindow(config)
             SubTitleLabel.TextColor3 = Library.Theme.text
             StandardBadge.TextColor3 = Library.Theme.accent
         end
+    end
+
+    function WindowObj:SetNotificationPosition(pos)
+        Library:SetNotificationPosition(pos)
     end
 
     function WindowObj:Toggle()
