@@ -6,7 +6,7 @@ pcall(function()
 end)
 if not Library then
     local success, res = pcall(function()
-        return loadstring(game:HttpGet("https://raw.githubusercontent.com/unagitatedly/repo/refs/heads/main/unagitatedly_ui.lua"))()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/chirdas-lol/repo/refs/heads/main/unagitatedly_ui.lua"))()
     end)
     if success and res then
         Library = res
