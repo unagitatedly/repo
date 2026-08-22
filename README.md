@@ -19,7 +19,7 @@ A lightweight, matcha inspired UI library for Roblox scripts built with pure Lua
 Load the library directly in your Roblox script or executor:
 
 ```lua
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/unagitatedly/repo/refs/heads/main/unagitatedly_ui.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/chirdas-lol/repo/refs/heads/main/unagitatedly_ui.lua"))()
 ```
 
 ---
@@ -27,7 +27,7 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/unagi
 ## Quick Example
 
 ```lua
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/unagitatedly/repo/refs/heads/main/unagitatedly_ui.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/chirdas-loly/repo/refs/heads/main/unagitatedly_ui.lua"))()
 
 local Window = Library:CreateWindow({
     Title = "unagitatedly",
